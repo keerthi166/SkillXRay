@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkillXray — Privacy Facts for AI Agent Skills</title>
+<meta name="description" content="SkillXray reads an AI-agent skill's code and prints a Privacy Facts label — verified against the code, not self-declared.">
+</head>
+<body>
+<style>
+ /* ============ tokens — "privacy facts label" system ============
+    paper + ink from the FDA label world; film-teal accent from the x-ray world;
+    serif italic = the skill's marketing voice; mono = the code's voice. */
+ :root {
+   --paper:#FAFAF7; --surface:#FFFFFF; --ink:#14181A; --muted:#5B6468;
+   --teal:#0E6E76; --teal-ink:#0A5259;
+   --bad:#B3261E; --bad-bg:#F9E9E7; --good:#2C6E49; --good-bg:#E9F2EC;
+   --hilite:#F5D547; --hilite-bg:#FBF3CE;
+   --rule:#14181A; --hairline:#D8D8D2; --code-bg:#F1F1EC;
+   --film:#0D1417; --film-ink:#BFE3E6;
+ }
+ @media (prefers-color-scheme: dark) { :root {
+   --paper:#101416; --surface:#171C1F; --ink:#ECEFEA; --muted:#9AA6A4;
+   --teal:#3AA6AE; --teal-ink:#7CC8CE;
+   --bad:#E5766D; --bad-bg:#33201E; --good:#6FBF8F; --good-bg:#1C2B22;
+   --hilite:#E3C63F; --hilite-bg:#2E2A16;
+   --rule:#ECEFEA; --hairline:#2E3538; --code-bg:#0D1417;
+ } }
+ :root[data-theme="dark"] {
+   --paper:#101416; --surface:#171C1F; --ink:#ECEFEA; --muted:#9AA6A4;
+   --teal:#3AA6AE; --teal-ink:#7CC8CE;
+   --bad:#E5766D; --bad-bg:#33201E; --good:#6FBF8F; --good-bg:#1C2B22;
+   --hilite:#E3C63F; --hilite-bg:#2E2A16;
+   --rule:#ECEFEA; --hairline:#2E3538; --code-bg:#0D1417;
+ }
+ :root[data-theme="light"] {
+   --paper:#FAFAF7; --surface:#FFFFFF; --ink:#14181A; --muted:#5B6468;
+   --teal:#0E6E76; --teal-ink:#0A5259;
+   --bad:#B3261E; --bad-bg:#F9E9E7; --good:#2C6E49; --good-bg:#E9F2EC;
+   --hilite:#F5D547; --hilite-bg:#FBF3CE;
+   --rule:#14181A; --hairline:#D8D8D2; --code-bg:#F1F1EC;
+ }
+
+ * { box-sizing:border-box; }
+ body { margin:0; background:var(--paper); color:var(--ink);
+        font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; }
+
+ /* the three voices */
+ .label-voice { font-family:"Arial Narrow","Helvetica Neue Condensed","Helvetica Neue",Arial,sans-serif;
+                font-weight:900; text-transform:uppercase; letter-spacing:.02em; }
+ .say  { font-family:Georgia,"Times New Roman",serif; font-style:italic; }
+ .does { font-family:"SF Mono",Menlo,Consolas,monospace; }
+
+ /* ============ nav ============ */
+ nav { display:flex; align-items:center; gap:22px; padding:14px 26px; background:var(--paper);
+       border-bottom:3px solid var(--rule); position:sticky; top:0; z-index:9; flex-wrap:wrap; }
+ nav .brand { font-size:20px; margin-right:auto; cursor:pointer; }
+ nav a { color:var(--ink); text-decoration:none; font-size:14px; cursor:pointer;
+         border-bottom:2px solid transparent; padding-bottom:2px; }
+ nav a:hover { border-bottom-color:var(--teal); }
+ nav .cta { background:var(--ink); color:var(--paper); padding:9px 18px; font-weight:700;
+            border-bottom:none; }
+ nav .cta:hover { background:var(--teal); color:#fff; }
+ .wrap { max-width:900px; margin:0 auto; padding:0 24px; }
+
+ /* ============ hero ============ */
+ .hero { padding:64px 0 56px; }
+ .hero h1 { font-size:clamp(34px,6vw,58px); line-height:1.08; margin:0 0 22px; max-width:16ch;
+            text-wrap:balance; font-weight:900; letter-spacing:-.015em; }
+ .hero h1 .say  { background:linear-gradient(transparent 55%, var(--hilite) 55%); font-weight:400; }
+ .hero h1 .does { font-size:.82em; color:var(--teal); }
+ .hero p { max-width:56ch; color:var(--muted); margin:0 0 30px; font-size:17.5px; }
+ .btn { display:inline-block; background:var(--ink); color:var(--paper); border:0; cursor:pointer;
+        font-weight:800; font-size:16px; padding:15px 30px; }
+ .btn:hover { background:var(--teal); color:#fff; }
+ .btn:focus-visible, a:focus-visible, input:focus-visible { outline:3px solid var(--teal); outline-offset:2px; }
+ .hero .fine { font-size:12.5px; color:var(--muted); margin-top:12px; }
+
+ /* signature: the x-ray reveal */
+ .xray { margin:44px 0 0; border:2.5px solid var(--rule); background:var(--surface); }
+ .xray .head { display:flex; justify-content:space-between; align-items:baseline;
+               border-bottom:2.5px solid var(--rule); padding:10px 16px; font-size:13px; }
+ .xray .head .label-voice { font-size:15px; }
+ .pane { padding:22px; }
+ .pane.saying { font-size:19px; line-height:1.5; }
+ .pane.saying .kw { background:var(--hilite-bg); padding:0 3px; }
+ .pane.saying .vlabel { display:block; font-size:11px; font-weight:800; letter-spacing:.07em;
+                        text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+ .pane.truth { background:var(--film); color:var(--film-ink); border-top:2.5px solid var(--rule); }
+ .pane.truth .vlabel { display:block; font-size:11px; font-weight:800; letter-spacing:.07em;
+                       text-transform:uppercase; color:var(--teal); margin-bottom:8px; }
+ .pane.truth .row { padding:3px 0; font-size:13.5px; }
+ .pane.truth .row .does { color:#9fdc9f; }
+ .pane.truth .verdict { color:#ff9b90; font-weight:700; }
+
+ /* ============ label sections ============ */
+ section { padding:58px 0 8px; }
+ .bar { border-top:9px solid var(--rule); padding-top:10px; display:flex; justify-content:space-between;
+        align-items:baseline; gap:12px; flex-wrap:wrap; }
+ .bar h2 { margin:0; font-size:26px; }
+ .bar .n { font-size:13px; color:var(--muted); }
+ .lead { color:var(--muted); max-width:66ch; margin:12px 0 30px; }
+
+ /* specimens (problem) */
+ .spec { border-top:1px solid var(--hairline); padding:20px 0; display:grid;
+         grid-template-columns:1fr 1fr; gap:22px; }
+ .spec:last-of-type { border-bottom:1px solid var(--hairline); }
+ .spec .who { font-size:13px; color:var(--muted); margin-bottom:6px; }
+ .spec .say { font-size:16.5px; }
+ .spec .found { font-size:13.5px; }
+ .spec .found .tag { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em;
+                     text-transform:uppercase; padding:2px 8px; margin-bottom:8px; }
+ .spec .found.bad .tag { background:var(--bad-bg); color:var(--bad); }
+ .spec .found.warn .tag { background:var(--hilite-bg); color:var(--ink); }
+ .spec .found .does { display:block; background:var(--code-bg); padding:6px 10px; margin-top:8px;
+                      font-size:12px; overflow-x:auto; }
+
+ /* pipeline as a label table */
+ .facts { border:2.5px solid var(--rule); background:var(--surface); margin-top:6px; }
+ .facts .fhead { padding:12px 16px 8px; border-bottom:8px solid var(--rule); }
+ .facts .fhead .label-voice { font-size:24px; display:block; }
+ .facts .fhead small { color:var(--muted); font-size:12.5px; }
+ .frow { display:grid; grid-template-columns:34px 1fr auto; gap:14px; align-items:baseline;
+         padding:11px 16px; border-bottom:1px solid var(--hairline); }
+ .frow:last-child { border-bottom:none; }
+ .frow.hot { background:var(--hilite-bg); }
+ .frow .idx { font-weight:900; font-size:15px; }
+ .frow b { font-size:15px; } .frow span { color:var(--muted); font-size:13.5px; }
+ .frow .src { font-size:11.5px; color:var(--teal-ink); text-align:right; white-space:nowrap; }
+
+ .formula { margin:26px 0 0; padding:14px 16px; border-left:4px solid var(--teal);
+            background:var(--surface); font-size:15px; overflow-x:auto; }
+ .formula .gloss { color:var(--muted); font-size:13px; font-style:italic; margin-top:6px; }
+
+ /* results rows */
+ .rrow { display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+         border-top:1px solid var(--hairline); padding:14px 0; }
+ .rrow:last-of-type { border-bottom:8px solid var(--rule); }
+ .rrow .what { max-width:60ch; } .rrow .what b { font-size:16px; }
+ .rrow .what div { color:var(--muted); font-size:13.5px; }
+ .rrow .num { font-size:34px; font-weight:900; font-variant-numeric:tabular-nums; white-space:nowrap; }
+ .rrow .num.good { color:var(--good); } .rrow .num.warn { color:var(--bad); }
+ .caveat { font-size:12.5px; color:var(--muted); font-style:italic; margin:14px 0 0; max-width:70ch; }
+
+ /* ============ scanner ============ */
+ #page-scanner { display:none; }
+ .scanbox { border:2.5px solid var(--rule); background:var(--surface); padding:24px; margin-top:30px; }
+ .row { display:flex; gap:10px; flex-wrap:wrap; }
+ #url { flex:1; min-width:230px; padding:14px 15px; font-size:15px; border:1.5px solid var(--ink);
+        background:var(--paper); color:var(--ink); font-family:inherit; }
+ .hint { color:var(--muted); font-size:13px; margin-top:10px; }
+ .hint a { color:var(--teal); cursor:pointer; text-decoration:underline; }
+ #progress { display:none; margin-top:22px; }
+ .steps { display:flex; gap:5px; margin-bottom:12px; }
+ .step { flex:1; text-align:center; font-size:11.5px; color:var(--muted); padding:7px 2px;
+         border-top:4px solid var(--hairline); text-transform:uppercase; letter-spacing:.04em; }
+ .step.on { color:var(--teal); border-top-color:var(--teal); font-weight:800; }
+ .step.done { color:var(--good); border-top-color:var(--good); }
+ #log { background:var(--film); color:#9fdc9f; font-family:"SF Mono",Menlo,monospace; font-size:12.5px;
+        padding:14px; height:150px; overflow-y:auto; white-space:pre-wrap; }
+ #result { display:none; margin-top:24px; }
+ .vhead { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
+          padding-bottom:10px; border-bottom:8px solid var(--rule); }
+ .vhead h3 { margin:0; font-size:22px; }
+ .risk { background:var(--bad); color:#fff; font-weight:800; font-size:13px; letter-spacing:.05em;
+         padding:6px 14px; text-transform:uppercase; }
+ .meta { color:var(--muted); font-size:13px; margin:8px 0; }
+ .vclaim { padding:10px 14px; background:var(--hilite-bg); border-left:4px solid var(--hilite);
+           margin:14px 0; font-size:15px; }
+ .vsum { padding:12px 14px; background:var(--bad-bg); border-left:4px solid var(--bad);
+         font-size:15px; margin:14px 0; }
+ .chip { display:inline-block; border:1.5px solid var(--bad); color:var(--bad); font-size:12px;
+         font-weight:700; padding:2px 10px; margin:2px 6px 2px 0; }
+ .evid { border-top:1px solid var(--hairline); padding:12px 0; }
+ .evid b { font-size:14.5px; } .evid .loc { float:right; font-size:12px; color:var(--muted); }
+ .evid .does { display:block; background:var(--code-bg); padding:6px 10px; margin-top:7px;
+               font-size:12px; overflow-x:auto; }
+ .advice { background:var(--good-bg); border-left:4px solid var(--good); padding:12px 14px;
+           font-size:14px; margin-top:16px; }
+
+ footer { margin-top:70px; border-top:3px solid var(--rule); padding:26px 24px 34px;
+          font-size:12.5px; color:var(--muted); text-align:center; line-height:1.7; }
+
+ @media (max-width:720px) { .spec { grid-template-columns:1fr; gap:10px; }
+   .rrow .num { font-size:26px; } }
+ @media (prefers-reduced-motion: reduce) { .scanline { box-shadow:none; } }
+</style>
+
+<nav>
+ <span class="brand label-voice" onclick="go('home')">Skill<span style="color:var(--teal)">Xray</span></span>
+ <a onclick="go('home','problem')">The problem</a>
+ <a onclick="go('home','how')">How the label is made</a>
+ <a onclick="go('home','results')">Does it work</a>
+ <a class="cta label-voice" onclick="go('scanner')">Scan a skill</a>
+</nav>
+
+<div id="page-home">
+
+ <div class="hero"><div class="wrap">
+  <h1>Skills <span class="say">say</span> one thing.<br>Their <span class="does">code</span> does another.</h1>
+  <p>Nobody reads a skill's code before installing it. SkillXray does — and prints a Privacy Facts label.</p>
+  <button class="btn label-voice" onclick="go('scanner')">Scan a skill</button>
+  <div class="fine">Read, never run · verified against the code</div>
+
+  <!-- signature: drag to x-ray a real skill -->
+  <div class="xray">
+    <div class="head"><span class="label-voice">Specimen · coaching-session-summarizer</span>
+      <span style="color:var(--muted)">a real skill, from a public collection</span></div>
+    <div class="pane saying"><span class="vlabel">What it says</span>
+      “Summarizes your coaching or therapy sessions.
+      The agent analyzes the transcript itself — <span class="kw">no API key</span>,
+      runs on the subscription.”</div>
+    <div class="pane truth">
+      <span class="vlabel">What its code does</span>
+      <div class="row"><span class="does">summarize_session.py:241 &nbsp; api_key = os.environ.get('ANTHROPIC_API_KEY')</span></div>
+      <div class="row"><span class="does">summarize_session.py:109 &nbsp; client.messages.create( …transcript… )</span></div>
+      <div class="row"><span class="verdict">✗ transcript + credentials → external vendor · 8 violations</span></div>
+    </div>
+  </div>
+ </div></div>
+
+ <section id="problem"><div class="wrap">
+  <div class="bar"><h2 class="label-voice">The problem</h2><span class="n">3 real skills</span></div>
+
+  <div class="spec">
+    <div><div class="who">🍎 says</div>
+      <div class="say">“Just me and my phone, looking at my workouts.”</div></div>
+    <div class="found bad"><span class="tag">does</span>
+      Sends your questions and credentials to a company the description never names.</div>
+  </div>
+  <div class="spec">
+    <div><div class="who">🛋️ says</div>
+      <div class="say">“Summarizes my therapy sessions. No API key.”</div></div>
+    <div class="found bad"><span class="tag">does</span>
+      Ships full transcripts — and an API key — to an AI vendor.</div>
+  </div>
+  <div class="spec">
+    <div><div class="who">💬 says</div>
+      <div class="say">“Just fun stats about my messages. Nothing gets uploaded.”</div></div>
+    <div class="found warn"><span class="tag">true — and still harmful</span>
+      Uploads nothing. Profiles your friends anyway.</div>
+  </div>
+ </div></section>
+
+ <section id="how"><div class="wrap">
+  <div class="bar"><h2 class="label-voice">How the label is made</h2><span class="n">5 steps</span></div>
+
+  <div class="facts">
+   <div class="fhead"><span class="label-voice">Audit Facts</span>
+     <small>per skill · ~4 minutes · the skill is read, never run</small></div>
+   <div class="frow"><span class="idx">1</span><div><b>Parse the skill</b><br><span>its promise (SKILL.md) and its code, split into sections</span></div><span class="src">marketplaces</span></div>
+   <div class="frow"><span class="idx">2</span><div><b>Find every data move</b><br><span>read · save · send · infer · delete — pinned to file:line</span></div><span class="src">GDPR · NIST lifecycle</span></div>
+   <div class="frow hot"><span class="idx">3</span><div><b>Identify violations</b><br><span>each flow vs. what the promise ∧ social norms entitle</span></div><span class="src">Contextual Integrity</span></div>
+   <div class="frow"><span class="idx">4</span><div><b>Name the harm</b><br><span>Surveillance · Disclosure · Inference (our extension) · …</span></div><span class="src">Solove's taxonomy</span></div>
+   <div class="frow"><span class="idx">5</span><div><b>Print the Privacy Facts</b><br><span>a label anyone can read before installing</span></div><span class="src">nutrition labels</span></div>
+  </div>
+
+ </div></section>
+
+ <section id="results"><div class="wrap">
+  <div class="bar"><h2 class="label-voice">Does it work</h2><span class="n">we audit ourselves too</span></div>
+
+  <div class="rrow"><div class="what"><b>Precision</b><div>when it flags, humans agree</div></div>
+    <div class="num good">93%</div></div>
+  <div class="rrow"><div class="what"><b>Recall</b><div>it under-flags — in one known, tunable rule</div></div>
+    <div class="num warn">60%</div></div>
+  <div class="rrow"><div class="what"><b>Cost per audit</b><div>~4 minutes per skill</div></div>
+    <div class="num">~55k <span style="font-size:14px;font-weight:400">tokens</span></div></div>
+
+  <p class="caveat">Pilot numbers — held-out validation in progress.</p>
+ </div></section>
+
+</div>
+
+<div id="page-scanner"><div class="wrap">
+ <section style="padding-top:42px">
+  <div class="bar"><h2 class="label-voice">Scan a skill</h2><span class="n">live — runs the real pipeline</span></div>
+  <p class="lead">Paste a marketplace or GitHub link. We fetch the skill's files, read them — never run
+     them — and print its Privacy Facts. Typical scan: 2–5 minutes; already-scanned
+     skills return instantly.</p>
+
+  <div class="scanbox">
+   <div class="row">
+     <input id="url" placeholder="https://skillsmp.com/creators/…  or a GitHub folder link">
+     <button class="btn label-voice" onclick="startScan()">Scan</button>
+   </div>
+   <div class="hint">Try one: <a onclick="demo()">zoom (glebis)</a> · public skills only · free</div>
+
+   <div id="progress">
+     <div class="steps">
+       <div class="step" id="s0">fetch</div><div class="step" id="s1">parse</div>
+       <div class="step" id="s2">moves</div><div class="step" id="s3">judge</div>
+       <div class="step" id="s4">harms</div><div class="step" id="s5">label</div>
+     </div>
+     <div id="log"></div>
+   </div>
+
+   <div id="result"></div>
+  </div>
+ </section>
+</div></div>
+
+<footer>
+ SkillXray — research prototype · University of Notre Dame × IBM Research<br>
+ static analysis only · every finding links to the exact line of code · numbers from the published pilot registry
+</footer>
+
+<script>
+function go(page, anchor){
+  document.getElementById('page-home').style.display    = page==='home' ? '' : 'none';
+  document.getElementById('page-scanner').style.display = page==='scanner' ? 'block' : 'none';
+  window.scrollTo(0,0);
+  if(anchor){ setTimeout(function(){ var el=document.getElementById(anchor);
+    if(el) el.scrollIntoView({behavior:'smooth'}); },50); }
+}
+/* ============ live scanner: POST /scan -> poll /status -> GET /card ============ */
+var API = "";   // same origin when served by the backend (localhost:8080).
+                // If this page is hosted elsewhere (Vercel), set the backend URL here.
+var pollTimer = null;
+
+function demo(){ document.getElementById('url').value =
+  "https://github.com/glebis/claude-skills/tree/main/zoom"; startScan(); }
+
+function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+function logLine(msg){ var log=document.getElementById('log');
+  log.textContent += msg + "\n"; log.scrollTop = log.scrollHeight; }
+
+/* pipeline step names (from the backend) -> progress segment index */
+function segFor(status, step){
+  if (status === 'queued' || status === 'fetching') return 0;
+  if (!step) return 1;
+  if (step.indexOf('step2') === 0) return 2;
+  if (step.indexOf('step3') === 0) return 3;
+  if (step.indexOf('step4') === 0) return 4;
+  if (step.indexOf('step5') === 0) return 5;
+  return 1;                                     // step0_gate / step1 territory
+}
+function paintSteps(active, allDone){
+  document.querySelectorAll('.step').forEach(function(s, j){
+    s.className = 'step' + (allDone ? ' done' : j < active ? ' done' : j === active ? ' on' : '');
+  });
+}
+
+function startScan(){
+  var url = document.getElementById('url').value.trim();
+  if(!url){ document.getElementById('url').focus(); return; }
+  if(pollTimer) clearInterval(pollTimer);
+  document.getElementById('result').style.display='none';
+  document.getElementById('progress').style.display='block';
+  document.getElementById('log').textContent='';
+  paintSteps(0, false);
+  logLine("→ submitting " + url);
+
+  fetch(API + "/scan", { method:"POST",
+      headers:{ "Content-Type":"application/json" }, body: JSON.stringify({url:url}) })
+    .then(function(r){ return r.json().then(function(b){ return {ok:r.ok, body:b}; }); })
+    .then(function(res){
+      if(!res.ok){ showError(res.body.detail || "request rejected"); return; }
+      logLine("→ accepted, scan id " + res.body.scan_id);
+      poll(res.body.scan_id);
+    })
+    .catch(function(){ showError("cannot reach the scan service — is the backend running?"); });
+}
+
+function poll(scanId){
+  var lastStep = "";
+  pollTimer = setInterval(function(){
+    fetch(API + "/status/" + scanId).then(function(r){ return r.json(); })
+      .then(function(st){
+        if(st.step && st.step !== lastStep){ lastStep = st.step; logLine("… " + st.step); }
+        paintSteps(segFor(st.status, st.step), false);
+        if(st.status === 'done'){ clearInterval(pollTimer); paintSteps(0, true); showCard(scanId); }
+        if(st.status === 'failed'){ clearInterval(pollTimer); showError(st.error); }
+      })
+      .catch(function(){ /* transient network blip while polling: just retry */ });
+  }, 2500);
+}
+
+function showError(msg){
+  document.getElementById('progress').style.display='none';
+  var r = document.getElementById('result');
+  r.innerHTML = '<div class="vsum">✗ ' + esc(msg) + '</div>';
+  r.style.display='block';
+}
+
+function showCard(scanId){
+  fetch(API + "/card/" + scanId).then(function(r){ return r.json(); })
+    .then(function(card){
+      document.getElementById('progress').style.display='none';
+      var r = document.getElementById('result');
+      if(card.skipped){
+        r.innerHTML = '<div class="advice"><b>Not privacy-relevant:</b> ' + esc(card.reason) +
+          ' — this skill touches no personal data, so no Privacy Facts label is needed.</div>';
+      } else {
+        // show the pipeline's OWN card, unmodified — the single source of visual truth
+        r.innerHTML = '<iframe src="' + API + '/card/' + scanId + '/html" ' +
+          'style="width:100%;height:900px;border:2.5px solid var(--rule);background:#fff" ' +
+          'title="Privacy Facts card"></iframe>' +
+          '<p class="meta"><a href="' + API + '/card/' + scanId + '/html" target="_blank">' +
+          'open the card in its own tab</a></p>';
+      }
+      r.style.display='block';
+    });
+}
+
+
+</script>
+
+</body>
+</html>
