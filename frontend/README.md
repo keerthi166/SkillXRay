@@ -1,4 +1,4 @@
-# frontend/ — the SkillXray frontend
+# SkillXray frontend
 
 The public face of the project: landing page + scanner demo, in one self-contained
 `index.html` (no framework, no build step, no external assets; light & dark themes).
