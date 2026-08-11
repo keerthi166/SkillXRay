@@ -150,6 +150,10 @@
         background:var(--paper); color:var(--ink); font-family:inherit; }
  .hint { color:var(--muted); font-size:13px; margin-top:10px; }
  .hint a { color:var(--teal); cursor:pointer; text-decoration:underline; }
+ .dropzone { border:2px dashed var(--rule); padding:18px; margin-top:14px; text-align:center;
+   color:var(--muted); font-size:13.5px; cursor:pointer; }
+ .dropzone.drag { border-color:var(--teal); color:var(--teal); }
+ .dropzone a { color:var(--teal); cursor:pointer; text-decoration:underline; }
  #progress { display:none; margin-top:22px; }
  .steps { display:flex; gap:5px; margin-bottom:12px; }
  .step { flex:1; text-align:center; font-size:11.5px; color:var(--muted); padding:7px 2px;
@@ -286,6 +290,12 @@
    </div>
    <div class="hint">Try one: <a onclick="demo()">zoom (glebis)</a> · public skills only · free</div>
 
+   <div id="dropzone" class="dropzone" onclick="document.getElementById('folderpick').click()">
+     or drag &amp; drop a skill folder here (the one with SKILL.md and its scripts) —
+     or <a>browse for a folder</a>
+   </div>
+   <input id="folderpick" type="file" webkitdirectory multiple style="display:none">
+
    <div id="progress">
      <div class="steps">
        <div class="step" id="s0">fetch</div><div class="step" id="s1">parse</div>
@@ -345,26 +355,98 @@ function paintSteps(active, allDone){
   });
 }
 
-function startScan(){
-  var url = document.getElementById('url').value.trim();
-  if(!url){ document.getElementById('url').focus(); return; }
+function beginRun(){
   if(pollTimer) clearInterval(pollTimer);
   document.getElementById('result').style.display='none';
   document.getElementById('progress').style.display='block';
   document.getElementById('log').textContent='';
   paintSteps(0, false);
+}
+
+function handleAccepted(res){
+  if(!res.ok){ showError(res.body.detail || "request rejected"); return; }
+  logLine("→ accepted, scan id " + res.body.scan_id);
+  poll(res.body.scan_id);
+}
+
+function startScan(){
+  var url = document.getElementById('url').value.trim();
+  if(!url){ document.getElementById('url').focus(); return; }
+  beginRun();
   logLine("→ submitting " + url);
 
   fetch(API + "/scan", { method:"POST",
       headers:{ "Content-Type":"application/json" }, body: JSON.stringify({url:url}) })
     .then(function(r){ return r.json().then(function(b){ return {ok:r.ok, body:b}; }); })
-    .then(function(res){
-      if(!res.ok){ showError(res.body.detail || "request rejected"); return; }
-      logLine("→ accepted, scan id " + res.body.scan_id);
-      poll(res.body.scan_id);
-    })
+    .then(handleAccepted)
     .catch(function(){ showError("cannot reach the scan service — is the backend running?"); });
 }
+
+/* ---- drag & drop a skill folder: collect files -> POST /scan/upload ---- */
+function submitFolder(files){
+  files = Array.prototype.slice.call(files);
+  if(!files.length){ showError("that folder looks empty"); return; }
+  if(files.length > 200){ showError("more than 200 files — not a normal skill folder"); return; }
+  beginRun();
+  logLine("→ uploading " + files.length + " file" + (files.length===1?"":"s"));
+  var fd = new FormData();
+  files.forEach(function(f){
+    fd.append("files", f, f.relPath || f.webkitRelativePath || f.name);
+  });
+  fetch(API + "/scan/upload", { method:"POST", body: fd })
+    .then(function(r){ return r.json().then(function(b){ return {ok:r.ok, body:b}; }); })
+    .then(handleAccepted)
+    .catch(function(){ showError("cannot reach the scan service — is the backend running?"); });
+}
+
+// Walk a dropped file/directory entry recursively; resolves to a flat File list
+// with .relPath set ("folder/scripts/x.py").
+function readEntry(entry, path){
+  return new Promise(function(resolve){
+    if(entry.isFile){
+      entry.file(function(f){ f.relPath = path + entry.name; resolve([f]); },
+                 function(){ resolve([]); });
+    } else if(entry.isDirectory){
+      var reader = entry.createReader(), pending = [];
+      (function readBatch(){
+        reader.readEntries(function(entries){
+          if(!entries.length){
+            Promise.all(pending).then(function(lists){
+              resolve([].concat.apply([], lists)); });
+          } else {
+            entries.forEach(function(e){ pending.push(readEntry(e, path + entry.name + "/")); });
+            readBatch();                       // readEntries returns results in batches
+          }
+        }, function(){ resolve([]); });
+      })();
+    } else resolve([]);
+  });
+}
+
+(function(){
+  var dz = document.getElementById('dropzone');
+  dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', function(){ dz.classList.remove('drag'); });
+  dz.addEventListener('drop', function(e){
+    e.preventDefault(); dz.classList.remove('drag');
+    var items = e.dataTransfer.items, roots = [], singleDir = false;
+    for(var i=0;i<items.length;i++){
+      var entry = items[i].webkitGetAsEntry && items[i].webkitGetAsEntry();
+      if(entry) roots.push(readEntry(entry, ""));
+      if(i===0 && entry && entry.isDirectory && items.length===1) singleDir = true;
+    }
+    Promise.all(roots).then(function(lists){
+      var files = [].concat.apply([], lists);
+      if(!singleDir)   // loose files dropped: give them a folder so the server sees folder/SKILL.md
+        files.forEach(function(f){ f.relPath = "dropped-skill/" + f.relPath; });
+      submitFolder(files);
+    });
+  });
+  document.getElementById('folderpick').addEventListener('change', function(){
+    if(this.files.length) submitFolder(this.files);
+    this.value = "";                            // allow re-picking the same folder
+  });
+})();
 
 function poll(scanId){
   var lastStep = "";
