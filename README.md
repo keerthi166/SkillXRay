@@ -26,8 +26,10 @@ python3 -m http.server 8000 -d frontend   # -> http://localhost:8000
 For live scans, also start the backend (see `DEPLOY.md` in the backend repo) —
 or just open http://localhost:8080, where the backend serves this page itself.
 
-## Deploy (Vercel)
+## Deploy (GitHub Pages)
 
-One-time setup: Vercel → Add New Project → import this repository →
-Root Directory: **`frontend`** → Framework preset: **Other** → no build
-command → Deploy. After that, every push to `main` redeploys automatically.
+Pushing to `main` publishes `frontend/` via `.github/workflows/pages.yml`.
+The workflow tries to enable Pages on its own; if its configure step fails
+with a permissions error, the repo owner does the one-time setup instead:
+Settings → Pages → Source: **GitHub Actions**. Site:
+https://keerthi166.github.io/SkillXRay/
