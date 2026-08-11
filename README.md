@@ -1,16 +1,33 @@
-# SkillXray frontend
+# frontend/ — the SkillXray website
 
-The public face of the project: landing page + scanner demo, in one self-contained
+The public face of the project: landing page + scanner, in one self-contained
 `index.html` (no framework, no build step, no external assets; light & dark themes).
 
-**Status: demo.** The "Scan a skill" page replays a *real recorded audit*
-(coaching-session-summarizer). It becomes live when `backend/` ships — the swap is
-~10 lines (replace the scripted log with `POST /scan` + `/status` polling).
+## How it finds the backend
+
+The page picks its API base automatically (see `var API` in `index.html`):
+
+- served **by the backend** (port 8080, locally or on a server) → same origin;
+- served anywhere else (GitHub Pages, `file://`, a static dev server) → the
+  visitor's own local backend at `http://localhost:8080`.
+
+So the deployed site does live scans for anyone running the backend locally,
+and shows the landing page + recorded demo to everyone else. The backend lives
+in the private `SkillAppropriateness` repo (it wraps unpublished pipeline code
+and needs VPN-only model access, so it is not part of this repo).
 
 ## Run locally
 
 ```bash
-open frontend/index.html            # or:
-python3 -m http.server 8000 -d website   # → http://localhost:8000
+open frontend/index.html                  # page only, or:
+python3 -m http.server 8000 -d frontend   # -> http://localhost:8000
 ```
 
+For live scans, also start the backend (see `DEPLOY.md` in the backend repo) —
+or just open http://localhost:8080, where the backend serves this page itself.
+
+## Deploy (Vercel)
+
+One-time setup: Vercel → Add New Project → import this repository →
+Root Directory: **`frontend`** → Framework preset: **Other** → no build
+command → Deploy. After that, every push to `main` redeploys automatically.
