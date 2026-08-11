@@ -314,8 +314,12 @@ function go(page, anchor){
     if(el) el.scrollIntoView({behavior:'smooth'}); },50); }
 }
 /* ============ live scanner: POST /scan -> poll /status -> GET /card ============ */
-var API = "";   // same origin when served by the backend (localhost:8080).
-                // If this page is hosted elsewhere (Vercel), set the backend URL here.
+// Where the backend lives. Served by the backend itself (always port 8080,
+// locally or on a server) -> same origin (""). Anywhere else — GitHub Pages,
+// file://, a static dev server — there is no backend at this origin, so talk
+// to the visitor's own local backend at localhost:8080 (CORS-enabled there;
+// browsers exempt localhost from mixed-content blocking on https pages).
+var API = (location.port === "8080") ? "" : "http://localhost:8080";
 var pollTimer = null;
 
 function demo(){ document.getElementById('url').value =
