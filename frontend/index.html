@@ -152,9 +152,15 @@
         background:var(--paper); color:var(--ink); font-family:inherit; }
  .hint { color:var(--muted); font-size:13px; margin-top:10px; }
  .hint a { color:var(--teal); cursor:pointer; text-decoration:underline; }
- .dropzone { border:2px dashed var(--rule); padding:18px; margin-top:14px; text-align:center;
-   color:var(--muted); font-size:13.5px; cursor:pointer; }
- .dropzone.drag { border-color:var(--teal); color:var(--teal); }
+ .ordiv { display:flex; align-items:center; gap:14px; margin:18px 0; color:var(--muted);
+   font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:800; }
+ .ordiv::before, .ordiv::after { content:""; flex:1; border-top:1.5px solid var(--hairline); }
+ .dropzone { border:2px dashed var(--rule); padding:28px 18px; text-align:center; cursor:pointer; }
+ .dropzone:hover { border-color:var(--teal); }
+ .dropzone .dz1 { font-weight:800; font-size:15.5px; }
+ .dropzone .dz2 { color:var(--muted); font-size:13px; margin-top:5px; }
+ .dropzone.drag { border-color:var(--teal); background:var(--surface); }
+ .dropzone.drag .dz1 { color:var(--teal); }
  .dropzone a { color:var(--teal); cursor:pointer; text-decoration:underline; }
  .fchip { flex:1; display:flex; align-items:center; gap:10px; min-width:0;
    border:2px solid var(--ink); background:var(--surface); padding:9px 12px; font-size:14.5px; }
@@ -299,9 +305,7 @@
 <div id="page-scanner"><div class="wrap">
  <section style="padding-top:42px">
   <div class="bar"><h2 class="label-voice">Scan a skill</h2><span class="n"></span></div>
-  <p class="lead">Paste a marketplace or GitHub link. We fetch the skill's files, read them — never run
-     them — and print its Privacy Facts. Typical scan: 2–5 minutes; already-scanned
-     skills return instantly.</p>
+  <p class="lead">Paste a marketplace or GitHub link. Most scans take 2–5 minutes.</p>
 
   <div class="scanbox">
    <div class="row">
@@ -309,14 +313,15 @@
      <span id="folderchip" class="fchip" style="display:none"></span>
      <button class="btn label-voice" onclick="scanNow()">Scan</button>
    </div>
-   <div class="hint">Try one: <a onclick="demo()">zoom (glebis)</a> · public skills only · free</div>
+   <div id="ordiv" class="ordiv"><span>or</span></div>
 
    <div id="dropzone" class="dropzone" onclick="document.getElementById('folderpick').click()">
-     or drag &amp; drop a skill folder here (the one with SKILL.md and its scripts) —
-     or <a>browse for a folder</a>
+     <div class="dz1">Drag &amp; drop a skill folder</div>
+     <div class="dz2">or <a>click to browse</a> · the folder with SKILL.md and its scripts</div>
    </div>
    <input id="folderpick" type="file" webkitdirectory multiple style="display:none">
    <div id="stagebox" class="stagebox" style="display:none"></div>
+   <div class="hint">Try one: <a onclick="demo()">zoom (glebis)</a> · public skills only · free</div>
 
    <div id="progress">
      <div class="steps">
@@ -486,6 +491,7 @@ function stageFolder(files){
   box.innerHTML = '<div class="filelist">' + rows + '</div>' + warn;
   box.style.display = 'block';
   document.getElementById('dropzone').style.display = 'none';
+  document.getElementById('ordiv').style.display = 'none';
   document.getElementById('result').style.display = 'none';
 }
 
@@ -495,6 +501,7 @@ function unstageFolder(){
   document.getElementById('url').style.display = '';
   document.getElementById('stagebox').style.display = 'none';
   document.getElementById('dropzone').style.display = 'block';
+  document.getElementById('ordiv').style.display = 'flex';
 }
 
 function submitStaged(){
