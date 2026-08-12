@@ -61,6 +61,8 @@
  nav .cta { background:var(--ink); color:var(--paper); padding:9px 18px; font-weight:700;
             border-bottom:none; }
  nav .cta:hover { background:var(--teal); color:#fff; }
+ nav .ghost { border:2px solid var(--ink); padding:7px 18px; font-weight:700; border-bottom:2px solid var(--ink); }
+ nav .ghost:hover { border-color:var(--teal); color:var(--teal); }
  .wrap { max-width:900px; margin:0 auto; padding:0 24px; }
 
  /* ============ hero ============ */
@@ -154,14 +156,35 @@
    color:var(--muted); font-size:13.5px; cursor:pointer; }
  .dropzone.drag { border-color:var(--teal); color:var(--teal); }
  .dropzone a { color:var(--teal); cursor:pointer; text-decoration:underline; }
+ .fchip { flex:1; display:flex; align-items:center; gap:10px; min-width:0;
+   border:2px solid var(--ink); background:var(--surface); padding:9px 12px; font-size:14.5px; }
+ .fchip .fname { flex:1 1 auto; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+ .fchip .fmeta { flex:0 0 auto; color:var(--muted); font-size:13px; white-space:nowrap; }
+ @media (max-width:560px){ .fchip .fmeta { display:none; } }  /* narrow: folder name wins */
+ .fchip .fx { color:var(--muted); cursor:pointer; text-decoration:none; padding:0 4px; }
+ .fchip .fx:hover { color:var(--ink); }
+ .stagebox { border:2px solid var(--rule); background:var(--surface); padding:10px 14px; margin-top:14px; }
+ .filelist { max-height:180px; overflow-y:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+   font-size:12.5px; }
+ .filelist .frow { display:flex; justify-content:space-between; gap:12px; padding:3px 2px;
+   border-bottom:1px solid var(--rule); }
+ .filelist .frow:last-child { border-bottom:none; }
+ .filelist .frow.fskip { color:var(--muted); text-decoration:line-through; opacity:.65; }
+ .filelist .fsize { color:var(--muted); white-space:nowrap; }
+ .stagebox .swarn { margin-top:8px; font-size:13px; color:#a03; }
  #progress { display:none; margin-top:22px; }
  .steps { display:flex; gap:5px; margin-bottom:12px; }
  .step { flex:1; text-align:center; font-size:11.5px; color:var(--muted); padding:7px 2px;
          border-top:4px solid var(--hairline); text-transform:uppercase; letter-spacing:.04em; }
  .step.on { color:var(--teal); border-top-color:var(--teal); font-weight:800; }
  .step.done { color:var(--good); border-top-color:var(--good); }
+ .console { position:relative; }
  #log { background:var(--film); color:#9fdc9f; font-family:"SF Mono",Menlo,monospace; font-size:12.5px;
         padding:14px; height:150px; overflow-y:auto; white-space:pre-wrap; }
+ #stopbtn { position:absolute; top:8px; right:8px; font-family:"SF Mono",Menlo,monospace;
+        font-size:11.5px; color:#e8a0a0; background:transparent; border:1.5px solid #7a4a4a;
+        padding:3px 10px; cursor:pointer; letter-spacing:.05em; }
+ #stopbtn:hover { color:#fff; border-color:#e8a0a0; background:rgba(232,160,160,.12); }
  #result { display:none; margin-top:24px; }
  .vhead { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
           padding-bottom:10px; border-bottom:8px solid var(--rule); }
@@ -192,19 +215,16 @@
 
 <nav>
  <span class="brand label-voice" onclick="go('home')">Skill<span style="color:var(--teal)">Xray</span></span>
- <a onclick="go('home','problem')">The problem</a>
- <a onclick="go('home','how')">How the label is made</a>
- <a onclick="go('home','results')">Does it work</a>
  <a class="cta label-voice" onclick="go('scanner')">Scan a skill</a>
+ <a class="ghost label-voice" href="#" title="arXiv preprint — coming soon">Paper</a>
 </nav>
 
 <div id="page-home">
 
  <div class="hero"><div class="wrap">
   <h1>Skills <span class="say">say</span> one thing.<br>Their <span class="does">code</span> does another.</h1>
-  <p>Nobody reads a skill's code before installing it. SkillXray does — and prints a Privacy Facts label.</p>
+  <p>Before you install a skill, see what its code does with your data. SkillXRay reveals privacy risks in how a skill handles your data.</p>
   <button class="btn label-voice" onclick="go('scanner')">Scan a skill</button>
-  <div class="fine">Read, never run · verified against the code</div>
 
   <!-- signature: drag to x-ray a real skill -->
   <div class="xray">
@@ -278,7 +298,7 @@
 
 <div id="page-scanner"><div class="wrap">
  <section style="padding-top:42px">
-  <div class="bar"><h2 class="label-voice">Scan a skill</h2><span class="n">live — runs the real pipeline</span></div>
+  <div class="bar"><h2 class="label-voice">Scan a skill</h2><span class="n"></span></div>
   <p class="lead">Paste a marketplace or GitHub link. We fetch the skill's files, read them — never run
      them — and print its Privacy Facts. Typical scan: 2–5 minutes; already-scanned
      skills return instantly.</p>
@@ -286,7 +306,8 @@
   <div class="scanbox">
    <div class="row">
      <input id="url" placeholder="https://skillsmp.com/creators/…  or a GitHub folder link">
-     <button class="btn label-voice" onclick="startScan()">Scan</button>
+     <span id="folderchip" class="fchip" style="display:none"></span>
+     <button class="btn label-voice" onclick="scanNow()">Scan</button>
    </div>
    <div class="hint">Try one: <a onclick="demo()">zoom (glebis)</a> · public skills only · free</div>
 
@@ -295,6 +316,7 @@
      or <a>browse for a folder</a>
    </div>
    <input id="folderpick" type="file" webkitdirectory multiple style="display:none">
+   <div id="stagebox" class="stagebox" style="display:none"></div>
 
    <div id="progress">
      <div class="steps">
@@ -302,7 +324,10 @@
        <div class="step" id="s2">moves</div><div class="step" id="s3">judge</div>
        <div class="step" id="s4">harms</div><div class="step" id="s5">label</div>
      </div>
-     <div id="log"></div>
+     <div class="console">
+       <div id="log"></div>
+       <button id="stopbtn" onclick="cancelScan()" style="display:none">✕ STOP</button>
+     </div>
    </div>
 
    <div id="result"></div>
@@ -311,8 +336,8 @@
 </div></div>
 
 <footer>
- SkillXray — research prototype · University of Notre Dame × IBM Research<br>
- static analysis only · every finding links to the exact line of code · numbers from the published pilot registry
+ SkillXray — research prototype · IBM Research<br>
+ Static analysis
 </footer>
 
 <script>
@@ -355,8 +380,12 @@ function paintSteps(active, allDone){
   });
 }
 
+var currentScanId = null;
+
 function beginRun(){
   if(pollTimer) clearInterval(pollTimer);
+  currentScanId = null;
+  document.getElementById('stopbtn').style.display='none';
   document.getElementById('result').style.display='none';
   document.getElementById('progress').style.display='block';
   document.getElementById('log').textContent='';
@@ -366,7 +395,25 @@ function beginRun(){
 function handleAccepted(res){
   if(!res.ok){ showError(res.body.detail || "request rejected"); return; }
   logLine("→ accepted, scan id " + res.body.scan_id);
+  currentScanId = res.body.scan_id;
+  document.getElementById('stopbtn').style.display='block';
   poll(res.body.scan_id);
+}
+
+function cancelScan(){
+  if(!currentScanId) return;
+  var id = currentScanId;
+  document.getElementById('stopbtn').style.display='none';
+  logLine("✕ stopping…");
+  fetch(API + "/scan/" + id + "/cancel", { method:"POST" })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if(pollTimer) clearInterval(pollTimer);
+      currentScanId = null;
+      if(res.status === 'cancelled'){ logLine("✕ scan cancelled"); }
+      else { logLine("— too late to cancel: scan already " + res.status); }
+    })
+    .catch(function(){ logLine("✗ could not reach the backend to cancel"); });
 }
 
 function startScan(){
@@ -382,17 +429,82 @@ function startScan(){
     .catch(function(){ showError("cannot reach the scan service — is the backend running?"); });
 }
 
-/* ---- drag & drop a skill folder: collect files -> POST /scan/upload ---- */
-function submitFolder(files){
+/* ---- drag & drop a skill folder: stage -> review -> POST /scan/upload ---- */
+// Mirror of the backend's skip rules, so the review list is honest about what
+// will actually be analyzed (backend/fetcher.py SKIP_EXTENSIONS + dotfiles).
+var SKIP_EXT = [".png",".jpg",".jpeg",".gif",".webp",".ico",".pdf",".zip",".gz",
+                ".tar",".mp3",".mp4",".mov",".woff",".woff2",".ttf",".eot"];
+var staged = null;   // {files:[...], name:"folder"} while a folder waits for Scan
+
+function pathOf(f){ return f.relPath || f.webkitRelativePath || f.name; }
+function isSkipped(p){
+  var base = p.split("/").pop();
+  if(base.charAt(0) === ".") return true;
+  var dot = base.lastIndexOf(".");
+  return dot !== -1 && SKIP_EXT.indexOf(base.slice(dot).toLowerCase()) !== -1;
+}
+function fmtSize(b){ return b < 1024 ? b + " B" : b < 1048576 ?
+  (b/1024).toFixed(1) + " KB" : (b/1048576).toFixed(1) + " MB"; }
+
+function scanNow(){                 // the ONE scan button: folder if staged, else URL
+  if(staged) submitStaged();
+  else startScan();
+}
+
+function stageFolder(files){
   files = Array.prototype.slice.call(files);
   if(!files.length){ showError("that folder looks empty"); return; }
   if(files.length > 200){ showError("more than 200 files — not a normal skill folder"); return; }
+  var name = pathOf(files[0]).split("/")[0];
+  if(pathOf(files[0]).indexOf("/") === -1) name = "dropped files";
+  staged = { files: files, name: name };
+
+  var kept = 0, total = 0, hasSkillMd = false, rows = "";
+  files.forEach(function(f){
+    var p = pathOf(f), skip = isSkipped(p);
+    var shown = p.split("/").slice(1).join("/") || p;   // path inside the folder
+    if(!skip){ kept++; total += f.size; }
+    if(!skip && shown === "SKILL.md") hasSkillMd = true;
+    rows += '<div class="frow' + (skip ? ' fskip' : '') + '"><span>' + esc(shown) +
+            (skip ? ' <i>(skipped)</i>' : '') + '</span><span class="fsize">' +
+            fmtSize(f.size) + '</span></div>';
+  });
+
+  var warn = "";
+  if(!hasSkillMd) warn = '<div class="swarn">⚠ no SKILL.md at the top of this folder — the scan will be rejected</div>';
+  else if(total > 5*1048576) warn = '<div class="swarn">⚠ over 5 MB of analyzable files — the scan will be rejected</div>';
+
+  // the folder takes the URL's place in the input row, sharing the one Scan button
+  var chip = document.getElementById('folderchip');
+  chip.innerHTML = '<span class="fname">📁 ' + esc(staged.name) + '</span>' +
+    '<span class="fmeta">' + kept + ' file' + (kept===1?'':'s') + ' · ' + fmtSize(total) + '</span>' +
+    '<a class="fx" onclick="unstageFolder()" title="remove this folder">✕</a>';
+  chip.style.display = 'flex';
+  document.getElementById('url').style.display = 'none';
+
+  var box = document.getElementById('stagebox');
+  box.innerHTML = '<div class="filelist">' + rows + '</div>' + warn;
+  box.style.display = 'block';
+  document.getElementById('dropzone').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+}
+
+function unstageFolder(){
+  staged = null;
+  document.getElementById('folderchip').style.display = 'none';
+  document.getElementById('url').style.display = '';
+  document.getElementById('stagebox').style.display = 'none';
+  document.getElementById('dropzone').style.display = 'block';
+}
+
+function submitStaged(){
+  if(!staged) return;
+  var files = staged.files;
+  unstageFolder();
   beginRun();
   logLine("→ uploading " + files.length + " file" + (files.length===1?"":"s"));
   var fd = new FormData();
-  files.forEach(function(f){
-    fd.append("files", f, f.relPath || f.webkitRelativePath || f.name);
-  });
+  files.forEach(function(f){ fd.append("files", f, pathOf(f)); });
   fetch(API + "/scan/upload", { method:"POST", body: fd })
     .then(function(r){ return r.json().then(function(b){ return {ok:r.ok, body:b}; }); })
     .then(handleAccepted)
@@ -439,11 +551,11 @@ function readEntry(entry, path){
       var files = [].concat.apply([], lists);
       if(!singleDir)   // loose files dropped: give them a folder so the server sees folder/SKILL.md
         files.forEach(function(f){ f.relPath = "dropped-skill/" + f.relPath; });
-      submitFolder(files);
+      stageFolder(files);
     });
   });
   document.getElementById('folderpick').addEventListener('change', function(){
-    if(this.files.length) submitFolder(this.files);
+    if(this.files.length) stageFolder(this.files);
     this.value = "";                            // allow re-picking the same folder
   });
 })();
@@ -455,8 +567,12 @@ function poll(scanId){
       .then(function(st){
         if(st.step && st.step !== lastStep){ lastStep = st.step; logLine("… " + st.step); }
         paintSteps(segFor(st.status, st.step), false);
-        if(st.status === 'done'){ clearInterval(pollTimer); paintSteps(0, true); showCard(scanId); }
-        if(st.status === 'failed'){ clearInterval(pollTimer); showError(st.error); }
+        var over = st.status === 'done' || st.status === 'failed' || st.status === 'cancelled';
+        if(over){ clearInterval(pollTimer); currentScanId = null;
+                  document.getElementById('stopbtn').style.display='none'; }
+        if(st.status === 'done'){ paintSteps(0, true); showCard(scanId); }
+        if(st.status === 'failed'){ showError(st.error); }
+        if(st.status === 'cancelled'){ logLine("✕ scan cancelled"); }
       })
       .catch(function(){ /* transient network blip while polling: just retry */ });
   }, 2500);
