@@ -4,41 +4,42 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SkillXray — Privacy Facts for AI Agent Skills</title>
-<meta name="description" content="SkillXray reads an AI-agent skill's code and prints a Privacy Facts label — verified against the code, not self-declared.">
+<meta name="description" content="Inspect an AI skill before installing it. Explore privacy findings with evidence from its code, or scan a skill using your own provider.">
+<script src="config.js"></script>
 </head>
 <body>
 <style>
  /* ============ tokens — "privacy facts label" system ============
-    paper + ink from the FDA label world; film-teal accent from the x-ray world;
+    Liberty-inspired seafoam, black, white, and copper;
     serif italic = the skill's marketing voice; mono = the code's voice. */
  :root {
-   --paper:#FAFAF7; --surface:#FFFFFF; --ink:#14181A; --muted:#5B6468;
-   --teal:#0E6E76; --teal-ink:#0A5259;
+   --paper:#F7FAF8; --surface:#FFFFFF; --ink:#101413; --muted:#53615B;
+   --teal:#6ECEB2; --teal-ink:#17614D;
    --bad:#B3261E; --bad-bg:#F9E9E7; --good:#2C6E49; --good-bg:#E9F2EC;
-   --hilite:#F5D547; --hilite-bg:#FBF3CE;
-   --rule:#14181A; --hairline:#D8D8D2; --code-bg:#F1F1EC;
-   --film:#0D1417; --film-ink:#BFE3E6;
+   --hilite:#C07D59; --hilite-bg:#F5EAE3;
+   --rule:#101413; --hairline:#D6E0DA; --code-bg:#EFF4F1;
+   --film:#0D1417; --film-ink:#D2F2E6;
  }
  @media (prefers-color-scheme: dark) { :root {
    --paper:#101416; --surface:#171C1F; --ink:#ECEFEA; --muted:#9AA6A4;
-   --teal:#3AA6AE; --teal-ink:#7CC8CE;
+   --teal:#6ECEB2; --teal-ink:#8DDCC2;
    --bad:#E5766D; --bad-bg:#33201E; --good:#6FBF8F; --good-bg:#1C2B22;
-   --hilite:#E3C63F; --hilite-bg:#2E2A16;
+   --hilite:#DCA17F; --hilite-bg:#30251F;
    --rule:#ECEFEA; --hairline:#2E3538; --code-bg:#0D1417;
  } }
  :root[data-theme="dark"] {
    --paper:#101416; --surface:#171C1F; --ink:#ECEFEA; --muted:#9AA6A4;
-   --teal:#3AA6AE; --teal-ink:#7CC8CE;
+   --teal:#6ECEB2; --teal-ink:#8DDCC2;
    --bad:#E5766D; --bad-bg:#33201E; --good:#6FBF8F; --good-bg:#1C2B22;
-   --hilite:#E3C63F; --hilite-bg:#2E2A16;
+   --hilite:#DCA17F; --hilite-bg:#30251F;
    --rule:#ECEFEA; --hairline:#2E3538; --code-bg:#0D1417;
  }
  :root[data-theme="light"] {
-   --paper:#FAFAF7; --surface:#FFFFFF; --ink:#14181A; --muted:#5B6468;
-   --teal:#0E6E76; --teal-ink:#0A5259;
+   --paper:#F7FAF8; --surface:#FFFFFF; --ink:#101413; --muted:#53615B;
+   --teal:#6ECEB2; --teal-ink:#17614D;
    --bad:#B3261E; --bad-bg:#F9E9E7; --good:#2C6E49; --good-bg:#E9F2EC;
-   --hilite:#F5D547; --hilite-bg:#FBF3CE;
-   --rule:#14181A; --hairline:#D8D8D2; --code-bg:#F1F1EC;
+   --hilite:#C07D59; --hilite-bg:#F5EAE3;
+   --rule:#101413; --hairline:#D6E0DA; --code-bg:#EFF4F1;
  }
 
  * { box-sizing:border-box; }
@@ -60,7 +61,7 @@
  nav a:hover { border-bottom-color:var(--teal); }
  nav .cta { background:var(--ink); color:var(--paper); padding:9px 18px; font-weight:700;
             border-bottom:none; }
- nav .cta:hover { background:var(--teal); color:#fff; }
+ nav .cta:hover { background:var(--teal); color:#101413; }
  nav .ghost { border:2px solid var(--ink); padding:7px 18px; font-weight:700; border-bottom:2px solid var(--ink); }
  nav .ghost:hover { border-color:var(--teal); color:var(--teal); }
  .wrap { max-width:900px; margin:0 auto; padding:0 24px; }
@@ -74,7 +75,7 @@
  .hero p { max-width:56ch; color:var(--muted); margin:0 0 30px; font-size:17.5px; }
  .btn { display:inline-block; background:var(--ink); color:var(--paper); border:0; cursor:pointer;
         font-weight:800; font-size:16px; padding:15px 30px; }
- .btn:hover { background:var(--teal); color:#fff; }
+ .btn:hover { background:var(--teal); color:#101413; }
  .btn:focus-visible, a:focus-visible, input:focus-visible { outline:3px solid var(--teal); outline-offset:2px; }
  .hero .fine { font-size:12.5px; color:var(--muted); margin-top:12px; }
 
@@ -144,6 +145,21 @@
  .rrow .num.good { color:var(--good); } .rrow .num.warn { color:var(--bad); }
  .caveat { font-size:12.5px; color:var(--muted); font-style:italic; margin:14px 0 0; max-width:70ch; }
 
+ .connection-box { margin-top:24px; border-top:2px solid var(--rule); padding-top:22px; }
+ .connection-box .bar { border-top:0; padding-top:0; margin-top:0; }
+ .connection-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0; }
+ .connection-grid label { display:flex; flex-direction:column; gap:7px; font-size:13px; font-weight:700; min-width:0; }
+ .connection-grid input,.connection-grid select { width:100%; min-width:0; box-sizing:border-box; padding:12px; border:1.5px solid var(--ink); background:var(--paper); color:var(--ink); font:inherit; }
+ .key-field { grid-column:1/-1; }
+ .key-row { display:flex; gap:8px; }
+ .key-row input { flex:1; }
+ .quiet-button { background:var(--paper); color:var(--ink); border:1.5px solid var(--ink); padding:10px 14px; cursor:pointer; font:inherit; }
+ .connection-note { color:var(--muted); font-size:13px; line-height:1.6; }
+ .scan-actions { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:20px; flex-wrap:wrap; }
+ #service-status { padding:10px 0; font-size:13px; color:var(--muted); }
+ button:disabled { opacity:.5; cursor:not-allowed; }
+ :focus-visible { outline:3px solid var(--teal); outline-offset:3px; }
+ @media(max-width:560px){ .connection-grid { grid-template-columns:1fr; } .scanbox {padding:16px;} }
  /* ============ scanner ============ */
  #page-scanner { display:none; }
  .scanbox { border:2.5px solid var(--rule); background:var(--surface); padding:24px; margin-top:30px; }
@@ -151,7 +167,7 @@
  #url { flex:1; min-width:230px; padding:14px 15px; font-size:15px; border:1.5px solid var(--ink);
         background:var(--paper); color:var(--ink); font-family:inherit; }
  .hint { color:var(--muted); font-size:13px; margin-top:10px; }
- .hint a { color:var(--teal); cursor:pointer; text-decoration:underline; }
+ .hint a { color:var(--teal-ink); cursor:pointer; text-decoration:underline; }
  .ordiv { display:flex; align-items:center; gap:14px; margin:18px 0; color:var(--muted);
    font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:800; }
  .ordiv::before, .ordiv::after { content:""; flex:1; border-top:1.5px solid var(--hairline); }
@@ -161,7 +177,7 @@
  .dropzone .dz2 { color:var(--muted); font-size:13px; margin-top:5px; }
  .dropzone.drag { border-color:var(--teal); background:var(--surface); }
  .dropzone.drag .dz1 { color:var(--teal); }
- .dropzone a { color:var(--teal); cursor:pointer; text-decoration:underline; }
+ .dropzone a { color:var(--teal-ink); cursor:pointer; text-decoration:underline; }
  .fchip { flex:1; display:flex; align-items:center; gap:10px; min-width:0;
    border:2px solid var(--ink); background:var(--surface); padding:9px 12px; font-size:14.5px; }
  .fchip .fname { flex:1 1 auto; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -217,79 +233,222 @@
  @media (max-width:720px) { .spec { grid-template-columns:1fr; gap:10px; }
    .rrow .num { font-size:26px; } }
  @media (prefers-reduced-motion: reduce) { .scanline { box-shadow:none; } }
+
+ /* Homepage: a clear entry point and a readable, source-reviewed example. */
+ html { scroll-padding-top:110px; }
+ .wrap { max-width:1080px; }
+ nav .brand { text-decoration:none; }
+ nav .brand span { color:var(--teal-ink); }
+ nav .cta,.btn { background:var(--teal); color:#101413; text-decoration:none; }
+ nav .cta:hover,.btn:hover { background:#8DDCC2; color:#101413; }
+ nav .ghost:hover { color:var(--teal-ink); }
+ :focus-visible { outline-color:var(--teal-ink); }
+ .hero { padding:76px 0 56px; }
+ .hero-layout { display:grid; grid-template-columns:1.25fr .75fr; gap:52px; align-items:center; }
+ .eyebrow { display:block; color:var(--teal-ink); font-size:12px; letter-spacing:.12em; font-weight:800; text-transform:uppercase; margin-bottom:18px; }
+ .hero h1 { max-width:17ch; font-size:clamp(38px,5.2vw,64px); letter-spacing:-.045em; }
+ .hero h1 em { font-style:normal; color:var(--teal-ink); }
+ .hero p { font-size:18px; }
+ .hero-actions { display:flex; align-items:center; flex-wrap:wrap; gap:22px; }
+ .text-link { color:var(--ink); font-weight:700; text-underline-offset:5px; }
+ .hero .fine { margin:18px 0 0; font-size:13px; }
+ .mini-label { border:2px solid var(--rule); background:var(--surface); padding:24px; box-shadow:10px 10px 0 var(--teal); }
+ .mini-label h2 { font-size:30px; line-height:1; margin:0; padding-bottom:14px; border-bottom:8px solid var(--rule); }
+ .mini-label p { font-size:13px; margin:12px 0; }
+ .mini-label ul { list-style:none; padding:0; margin:0; }
+ .mini-label li { padding:13px 0; border-top:1px solid var(--hairline); font-weight:700; display:flex; gap:12px; }
+ .mini-label li span { color:var(--teal-ink); }
+ .mini-label small { display:block; margin-top:12px; color:var(--muted); }
+ .journey { padding:28px 0; border-block:1px solid var(--hairline); }
+ .journey ol { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; padding:0; margin:0; list-style:none; }
+ .journey li { display:flex; gap:14px; }
+ .journey .number { flex:none; width:30px; height:30px; display:grid; place-items:center; border:1px solid var(--hairline); font-weight:800; border-radius:50%; }
+ .journey b { font-size:15px; }
+ .journey p { margin:5px 0 0; color:var(--muted); font-size:13px; }
+ #example { padding-top:60px; }
+ .example-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+ .example-heading h2 { font-size:32px; margin:0; letter-spacing:-.025em; }
+ .example-heading .eyebrow { margin-bottom:6px; }
+ .sample-tag { font-size:12px; color:var(--teal-ink); background:var(--good-bg); padding:7px 12px; font-weight:700; }
+ .technical-name { overflow-wrap:anywhere; font-family:monospace; font-size:12px; color:var(--muted); margin:8px 0 22px; }
+ .example-grid { display:grid; grid-template-columns:1fr 1.15fr; border:2px solid var(--rule); background:var(--surface); }
+ .example-context { padding:26px; border-right:1px solid var(--hairline); }
+ .example-context h3 { margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
+ .example-context p { font-size:15px; margin:0 0 24px; }
+ .example-context p:last-child { margin:0; }
+ .example-report { padding:26px; }
+ .example-report h3 { font-size:30px; line-height:1; margin:0 0 16px; border-bottom:8px solid var(--rule); padding-bottom:12px; }
+ .report-scope { font-size:12px; color:var(--muted); margin:0 0 14px; }
+ .report-line { padding:12px 0; border-top:1px solid var(--hairline); }
+ .report-line b { display:block; font-size:13px; }
+ .report-line p { margin:4px 0 0; font-size:15px; }
+ .report-line.attention { padding:14px; background:var(--hilite-bg); border-left:3px solid var(--hilite); }
+ details { border-top:1px solid var(--hairline); margin-top:20px; padding-top:16px; }
+ summary { cursor:pointer; font-weight:700; }
+ details p { color:var(--muted); font-size:14px; }
+ .evidence-code { overflow-x:auto; background:var(--code-bg); padding:16px; font-size:12px; line-height:1.8; }
+ .evidence-note { font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
+ .example-limit { font-size:13px; color:var(--muted); margin:18px 0 0; max-width:85ch; }
+ .closing { display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-top:44px; padding:28px 0; border-block:1px solid var(--hairline); }
+ .closing h2 { margin:0 0 5px; font-size:25px; }
+ .closing p { margin:0; color:var(--muted); font-size:14px; }
+ #research { padding-top:44px; }
+ #research>div>details { margin:0; }
+ #research h3 { margin-top:30px; }
+ .step.on { color:var(--teal-ink); }
+ @media(max-width:760px) {
+  .hero-layout { grid-template-columns:1fr; gap:32px; }
+  .hero { padding:40px 0; }
+  .mini-label { max-width:480px; }
+  .example-grid { grid-template-columns:1fr; }
+  .example-context { border-right:0; border-bottom:1px solid var(--hairline); }
+  .journey ol { grid-template-columns:1fr; gap:22px; }
+  nav { gap:12px; padding:12px 18px; }
+  nav .ghost { display:none; }
+  .frow { grid-template-columns:24px 1fr; }
+  .frow .src { grid-column:2; text-align:left; white-space:normal; }
+ }
+
+
+ #page-reports { display:none; }
+ .report-intro { padding-top:44px; }
+ .report-intro h1 { font-size:clamp(30px,5vw,46px); letter-spacing:-.03em; margin:0 0 12px; }
+ .report-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:26px 0 18px; }
+ .report-toolbar select { font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--hairline); padding:9px; }
+ .threat-list { list-style:none; padding:0; margin:0; border-top:4px solid var(--rule); }
+ .threat-item { padding:22px 0; border-bottom:1px solid var(--hairline); }
+ .threat-top { display:flex; align-items:baseline; justify-content:space-between; gap:16px; }
+ .threat-top h3 { font-size:18px; margin:0; }
+ .threat-item p { color:var(--muted); margin:8px 0 0; max-width:78ch; }
+ .severity { display:inline-block; flex:none; font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:800; padding:4px 10px; border:1px solid currentColor; }
+ .severity-critical,.severity-high { color:var(--bad); background:var(--bad-bg); }
+ .severity-medium { color:var(--ink); background:var(--hilite-bg); }
+ .severity-low { color:var(--teal-ink); background:var(--good-bg); }
+ .severity-unrated { color:var(--muted); }
+ .severity-guide { display:flex; flex-wrap:wrap; gap:12px 22px; font-size:13px; color:var(--muted); padding:14px 0; }
+ .report-evidence { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; }
+ nav a[aria-current="page"] { text-decoration:underline; text-underline-offset:5px; }
+ @media(max-width:480px){ nav .brand { width:100%; } nav .cta { margin-left:auto; } .threat-top { align-items:flex-start; } }
+
+ .run-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; padding:24px 0; border-block:2px solid var(--rule); }
+ .run-stat strong { display:block; font-size:38px; line-height:1.3; color:var(--teal-ink); }
+ .run-stat span { color:var(--muted); font-size:13px; }
+ .harm-ranking { list-style:decimal-leading-zero; padding-left:34px; }
+ .harm-rank { padding:13px 0 13px 8px; border-bottom:1px solid var(--hairline); }
+ .harm-rank span { display:block; color:var(--muted); font-size:13px; }
+ .report-toolbar label { display:flex; flex-direction:column; gap:7px; font-size:13px; flex:1; min-width:180px; }
+ .report-toolbar input { padding:10px; font:inherit; background:var(--surface); color:var(--ink); border:1px solid var(--hairline); min-width:0; width:100%; }
+ .skill-report { margin:0; padding:0; border:0; }
+ .skill-name { font-size:18px; overflow-wrap:anywhere; }
+ .report-count { display:block; margin-top:5px; font-size:13px; color:var(--muted); font-weight:400; }
+ .review-note { background:var(--hilite-bg); border-left:3px solid var(--hilite); padding:14px; }
+ .review-badge { display:inline-block; font-size:12px; margin-top:10px; color:var(--muted); }
+ .recorded-finding { padding:20px; margin-top:18px; border:1px solid var(--hairline); background:var(--surface); }
+ .recorded-finding .threat-top { flex-wrap:wrap; }
+ .recorded-finding .report-evidence { padding:14px; background:var(--code-bg); }
+ @media(max-width:640px){ .run-stats { grid-template-columns:1fr 1fr; } .recorded-finding { padding:14px; } }
+
+ .harms-tagline { font-size:clamp(20px,3vw,28px); margin:14px 0 30px; color:var(--teal-ink); letter-spacing:-.02em; }
+ .featured-heading { font-size:18px; margin-bottom:6px; }
+ #featured-report-list { border-top:2px solid var(--rule); }
+ .browse-more { margin-top:30px; border:2px solid var(--hairline); padding:22px; }
+ .browse-more>summary { font-size:19px; }
+ .harm-explainer { padding:20px; background:var(--good-bg); border-left:4px solid var(--teal); margin:18px 0; }
+ .harm-explainer h3 { margin:0 0 8px; font-size:19px; }
+ .harm-explainer p { margin:0; font-size:15px; max-width:75ch; }
+ .harm-explainer a { display:inline-block; font-size:12px; margin-top:12px; }
+ .harm-explainer a[hidden] { display:none; }
+ @media(max-width:480px){ .browse-more { padding:14px; } }
+
+ .harm-explorer { display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start; }
+ .harm-explorer .harm-ranking { margin:0; padding-left:30px; }
+ .harm-explorer .harm-rank { padding:0; }
+ .harm-category-button { display:block; width:100%; text-align:left; font:inherit; color:var(--ink); border:0; background:transparent; padding:13px 12px; cursor:pointer; }
+ .harm-category-button[aria-pressed="true"] { background:var(--good-bg); box-shadow:inset 3px 0 var(--teal-ink); }
+ .harm-category-button:hover { background:var(--good-bg); }
+ .harm-explorer .harm-explainer { margin:0; position:sticky; top:130px; min-height:220px; }
+ @media(max-width:700px){ .harm-explorer { grid-template-columns:1fr; gap:18px; } .harm-explorer .harm-explainer { grid-row:1; position:static; min-height:0; } }
 </style>
 
-<nav>
- <span class="brand label-voice" onclick="go('home')">Skill<span style="color:var(--teal)">Xray</span></span>
- <a class="cta label-voice" onclick="go('scanner')">Scan a skill</a>
- <a class="ghost label-voice" href="#" title="arXiv preprint — coming soon">Paper</a>
+<nav aria-label="Main navigation">
+ <a class="brand label-voice" href="#home" onclick="go('home')">Skill<span>Xray</span></a>
+ <a class="report-nav label-voice" href="#reports" onclick="go('reports')">Threat reports</a>
+ <a class="ghost label-voice" href="#research" onclick="go('home','research')">Research</a>
+ <a class="cta label-voice" href="#scanner" onclick="go('scanner')">Scan a skill</a>
 </nav>
 
-<div id="page-home">
-
- <div class="hero"><div class="wrap">
-  <h1>Skills <span class="say">say</span> one thing.<br>Their <span class="does">code</span> does another.</h1>
-  <p>Before you install a skill, see what its code does with your data. SkillXRay reveals privacy risks in how a skill handles your data.</p>
-  <button class="btn label-voice" onclick="go('scanner')">Scan a skill</button>
-
-  <!-- signature: drag to x-ray a real skill -->
-  <div class="xray">
-    <div class="head"><span class="label-voice">Specimen · coaching-session-summarizer</span>
-      <span style="color:var(--muted)">a real skill, from a public collection</span></div>
-    <div class="pane saying"><span class="vlabel">What it says</span>
-      “Summarizes your coaching or therapy sessions.
-      The agent analyzes the transcript itself — <span class="kw">no API key</span>,
-      runs on the subscription.”</div>
-    <div class="pane truth">
-      <span class="vlabel">What its code does</span>
-      <div class="row"><span class="does">summarize_session.py:241 &nbsp; api_key = os.environ.get('ANTHROPIC_API_KEY')</span></div>
-      <div class="row"><span class="does">summarize_session.py:109 &nbsp; client.messages.create( …transcript… )</span></div>
-      <div class="row"><span class="verdict">✗ transcript + credentials → external vendor · 8 violations</span></div>
-    </div>
+<main id="page-home">
+ <div class="hero"><div class="wrap hero-layout">
+  <div>
+   <span class="eyebrow">Privacy facts for AI skills</span>
+   <h1>Skills <span class="say">say</span> one thing.<br>Their <span class="does">code</span> does another.</h1>
+   <p>Before you install a skill, see what its code does with your data. SkillXRay reveals privacy risks in how a skill handles your data.</p>
+   <div class="hero-actions"><a class="btn label-voice" href="#scanner" onclick="go('scanner')">Scan a skill</a><a class="text-link" href="#example">Explore an example ↗</a></div>
   </div>
+  <aside class="mini-label" aria-label="What your report helps you understand">
+   <h2 class="label-voice">Privacy Facts</h2>
+   <p>A clearer picture before you install.</p>
+   <ul><li><span aria-hidden="true">01</span> What data it reads</li><li><span aria-hidden="true">02</span> Where that data goes</li><li><span aria-hidden="true">03</span> What deserves a closer look</li></ul>
+  </aside>
  </div></div>
 
- <section id="problem"><div class="wrap">
-  <div class="bar"><h2 class="label-voice">The problem</h2><span class="n">3 real skills</span></div>
+ <div class="journey"><div class="wrap"><ol aria-label="How to scan a skill">
+  <li><span class="number" aria-hidden="true">1</span><div><b>Add a skill</b><p>Paste a link or upload its folder.</p></div></li>
+  <li><span class="number" aria-hidden="true">2</span><div><b>Choose your provider</b><p>Use your API key or an available LiteLLM gateway. Provider charges apply.</p></div></li>
+  <li><span class="number" aria-hidden="true">3</span><div><b>Review findings</b><p>Read the report and inspect the supporting code.</p></div></li>
+ </ol></div></div>
 
-  <div class="spec">
-    <div><div class="who">🍎 says</div>
-      <div class="say">“Just me and my phone, looking at my workouts.”</div></div>
-    <div class="found bad"><span class="tag">does</span>
-      Sends your questions and credentials to a company the description never names.</div>
+ <section id="example" aria-labelledby="example-title"><div class="wrap">
+  <div class="example-heading"><div><span class="eyebrow">Example analysis</span><h2 id="example-title">A session summarizer</h2></div><span class="sample-tag">Explore without an API key</span></div>
+  <p class="technical-name">coaching-session-summarizer · glebis / claude-skills</p>
+  <div class="example-grid">
+   <div class="example-context">
+    <h3>What it promises</h3><p>Turn coaching or therapy transcripts into insights, decisions, and action items.</p>
+    <h3>Two ways to run it</h3><p>The default workflow asks the active agent to analyze the transcript in-session. The documentation also describes a legacy script for running without an interactive agent.</p>
+    <h3>What the source review found</h3><p><strong>That optional script sends the transcript to Anthropic’s API when run.</strong> Sensitive session content would leave the machine through this API call.</p>
+   </div>
+   <div class="example-report">
+    <h3 class="label-voice">Privacy Facts</h3><p class="report-scope">Source-reviewed example · optional API fallback</p>
+    <div class="report-line"><b>Data involved</b><p>Full coaching or therapy transcript</p></div>
+    <div class="report-line"><b>Sent to</b><p>Anthropic, for summarization</p></div>
+    <div class="report-line"><b>When it happens</b><p>When the legacy summarization script makes its API request</p></div>
+    <div class="report-line attention"><b>Before using this path</b><p>Check that sending session content to this provider is appropriate for the people in the transcript.</p></div>
+   </div>
   </div>
-  <div class="spec">
-    <div><div class="who">🛋️ says</div>
-      <div class="say">“Summarizes my therapy sessions. No API key.”</div></div>
-    <div class="found bad"><span class="tag">does</span>
-      Ships full transcripts — and an API key — to an AI vendor.</div>
-  </div>
-  <div class="spec">
-    <div><div class="who">💬 says</div>
-      <div class="say">“Just fun stats about my messages. Nothing gets uploaded.”</div></div>
-    <div class="found warn"><span class="tag">true — and still harmful</span>
-      Uploads nothing. Profiles your friends anyway.</div>
-  </div>
+  <details><summary>View supporting code</summary>
+   <p>The transcript is inserted into the prompt, then passed to the Anthropic client. This excerpt is shortened; the ellipsis marks omitted prompt instructions.</p>
+   <p class="evidence-note">scripts/summarize_session.py · lines 92–114</p>
+   <pre class="evidence-code"><code>prompt = f"""Analyze this coaching session transcript and extract:
+…
+Transcript:
+{transcript}"""
+
+message = client.messages.create(
+    model=MODEL,
+    max_tokens=2000,
+    system=system_prompt,
+    messages=[{"role": "user", "content": prompt}]
+)</code></pre>
+   <p><strong>Documentation context:</strong> SKILL.md → Resources identifies this script as the legacy / headless fallback and describes its direct Anthropic API call. The environment key authenticates that request; reading it is not, by itself, evidence of credential theft.</p>
+   <p class="evidence-note">Reviewed from the bundled corpus snapshot in backend commit 9883313. This is a curated source review, not a live scan or an unedited model-generated report.</p>
+  </details>
+  <p class="example-limit">Static analysis identifies possible behavior, not proof that a path ran. The default agent workflow is separate and is not a guarantee of local-only processing. Findings need context and may miss risks.</p>
+  <div class="closing"><div><h2>What about the skill you’re installing?</h2><p>Start with its files. Follow the evidence.</p></div><a class="btn label-voice" href="#scanner" onclick="go('scanner')">Scan your skill</a></div>
  </div></section>
 
- <section id="how"><div class="wrap">
-  <div class="bar"><h2 class="label-voice">How the label is made</h2><span class="n">5 steps</span></div>
-
+ <section id="research"><div class="wrap"><details><summary>Research &amp; methodology</summary>
+  <p>SkillXray is a research prototype. Model-assisted analysis examines skill documentation and code for data handling and potential privacy harms. Reports support review; they are not a certification of safety.</p>
   <div class="facts">
    <div class="fhead"><span class="label-voice">Audit Facts</span>
-     <small>per skill · ~4 minutes · the skill is read, never run</small></div>
+     <small>Static analysis · reads skill files without executing the skill</small></div>
    <div class="frow"><span class="idx">1</span><div><b>Parse the skill</b><br><span>its promise (SKILL.md) and its code, split into sections</span></div><span class="src">marketplaces</span></div>
-   <div class="frow"><span class="idx">2</span><div><b>Find every data move</b><br><span>read · save · send · infer · delete — pinned to file:line</span></div><span class="src">GDPR · NIST lifecycle</span></div>
-   <div class="frow hot"><span class="idx">3</span><div><b>Identify violations</b><br><span>each flow vs. what the promise ∧ social norms entitle</span></div><span class="src">Contextual Integrity</span></div>
+   <div class="frow"><span class="idx">2</span><div><b>Identify data flows</b><br><span>read · save · send · infer · delete — pinned to file:line</span></div><span class="src">GDPR · NIST lifecycle</span></div>
+   <div class="frow hot"><span class="idx">3</span><div><b>Assess potential violations</b><br><span>each flow vs. what the promise ∧ social norms entitle</span></div><span class="src">Contextual Integrity</span></div>
    <div class="frow"><span class="idx">4</span><div><b>Name the harm</b><br><span>Surveillance · Disclosure · Inference (our extension) · …</span></div><span class="src">Solove's taxonomy</span></div>
    <div class="frow"><span class="idx">5</span><div><b>Print the Privacy Facts</b><br><span>a label anyone can read before installing</span></div><span class="src">nutrition labels</span></div>
   </div>
 
- </div></section>
-
- <section id="results"><div class="wrap">
-  <div class="bar"><h2 class="label-voice">Does it work</h2><span class="n">we audit ourselves too</span></div>
-
+  <h3>Preliminary pilot results</h3>
   <div class="rrow"><div class="what"><b>Precision</b><div>when it flags, humans agree</div></div>
     <div class="num good">93%</div></div>
   <div class="rrow"><div class="what"><b>Recall</b><div>it under-flags — in one known, tunable rule</div></div>
@@ -298,9 +457,46 @@
     <div class="num">~55k <span style="font-size:14px;font-weight:400">tokens</span></div></div>
 
   <p class="caveat">Pilot numbers — held-out validation in progress.</p>
- </div></section>
+ </details></div></section>
+</main>
 
-</div>
+<main id="page-reports"><div class="wrap">
+ <section class="report-intro" aria-labelledby="reports-title">
+  <span class="eyebrow">Findings from our corpus · August 13, 2026</span>
+  <h1 id="reports-title">What our skill analysis found.</h1>
+  <div id="report-load" role="status" aria-live="polite">Loading the recorded findings…</div>
+  <div id="recorded-results" hidden>
+   <div class="run-stats" id="run-stats" aria-label="Run summary"></div>
+   <p class="connection-note">These are potential violations flagged by automated analysis, not confirmed incidents. This curated sample does not represent the whole marketplace. Multiple flags can describe the same behavior.</p>
+   <div class="bar" style="margin-top:36px"><h2 class="label-voice">Most common harm categories</h2></div>
+   <p class="connection-note">Ranked by number of analyzed skills with at least one flag in the category. A skill can appear in several categories.</p>
+   <p class="connection-note">Hover, focus, or tap a category to learn what it means.</p>
+   <div class="harm-explorer">
+   <ol id="harm-ranking" class="harm-ranking"></ol>
+   <aside id="harm-definition" class="harm-explainer" aria-live="polite" aria-atomic="true">
+    <h3 id="harm-meaning-title">What do these harms mean?</h3>
+    <p id="harm-meaning"></p>
+    <a id="harm-meaning-source" class="text-link" href="https://law.shu.edu/documents/taxonomy-privacy.pdf" target="_blank" rel="noopener noreferrer">About Solove’s taxonomy ↗</a>
+   </aside>
+   </div>
+   <div class="bar" style="margin-top:38px"><h2 class="label-voice">Privacy Harms</h2></div>
+   <p class="harms-tagline">Behind every data flow, a human consequence.</p>
+   <h3 class="featured-heading">Five skills to explore first</h3>
+   <p class="connection-note">Pinned from this run by total flagged harms. These five stay fixed while you browse the rest.</p>
+   <ul id="featured-report-list" class="threat-list" aria-label="Five featured skill reports"></ul>
+   <details class="browse-more"><summary>Browse the other 49 skills</summary>
+   <div class="report-toolbar">
+    <label for="report-search">Find a skill<input id="report-search" type="search" placeholder="Search skill names" autocomplete="off"></label>
+    <label for="harm-filter">Harm category<select id="harm-filter"><option value="all">All categories</option></select></label>
+    <label for="flag-filter">Findings<select id="flag-filter"><option value="all">All analyzed skills</option><option value="flagged">With potential violations</option><option value="clear">No potential violations flagged</option></select></label>
+   </div>
+   <p id="finding-count" class="connection-note" role="status" aria-live="polite"></p>
+   <ul id="recorded-report-list" class="threat-list" aria-label="Recorded skill reports"></ul>
+   </details>
+   <p class="connection-note">Snapshot from the documented corpus run. No API key or upload is needed to explore these results.</p>
+  </div>
+ </section>
+</div></main>
 
 <div id="page-scanner"><div class="wrap">
  <section style="padding-top:42px">
@@ -311,7 +507,7 @@
    <div class="row">
      <input id="url" placeholder="https://skillsmp.com/creators/…  or a GitHub folder link">
      <span id="folderchip" class="fchip" style="display:none"></span>
-     <button class="btn label-voice" onclick="scanNow()">Scan</button>
+
    </div>
    <div id="ordiv" class="ordiv"><span>or</span></div>
 
@@ -321,7 +517,20 @@
    </div>
    <input id="folderpick" type="file" webkitdirectory multiple style="display:none">
    <div id="stagebox" class="stagebox" style="display:none"></div>
-   <div class="hint">Try one: <a onclick="demo()">zoom (glebis)</a> · public skills only · free</div>
+   <div class="hint">Example URL: <a onclick="demo()">zoom (glebis)</a> · provider usage charges apply</div>
+   <div class="connection-box">
+    <div class="bar"><h3 class="label-voice">Analysis connection</h3></div>
+    <div id="service-status" role="status" aria-live="polite">Connecting to the scan service…</div>
+    <div class="connection-grid">
+     <label>Provider<select id="provider" onchange="providerChanged()"><option value="openai">OpenAI · use my key</option><option value="anthropic">Anthropic · use my key</option></select></label>
+     <label id="model-field">Model<input id="model" value="gpt-4o" spellcheck="false" autocomplete="off" aria-describedby="model-note"></label>
+     <label id="gateway-field" style="display:none">LiteLLM gateway<select id="gateway"></select></label>
+     <div class="key-field" id="key-field"><label for="api-key" style="margin-bottom:7px">API key</label><div class="key-row"><input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your provider API key" aria-describedby="key-note"><button type="button" class="quiet-button" id="key-toggle" onclick="toggleKey()" aria-label="Show API key">Show</button></div></div>
+    </div>
+    <p class="connection-note" id="model-note">Choose a model available to your account. Connection testing checks key and model access; a scan checks analysis compatibility.</p>
+    <p class="connection-note" id="key-note">Your key is sent securely to this scan service and encrypted while queued. The worker uses it for your scan, then discards it. Skill content is sent to your selected provider. Reports expire after 24 hours. Keep this tab open to access your scan.</p>
+    <div class="scan-actions"><div><button class="quiet-button" type="button" id="test-connection" onclick="testConnection()" disabled>Test connection</button><span id="connection-status" role="status" aria-live="polite"></span></div><button id="scan-button" class="btn label-voice" onclick="scanNow()" disabled>Start analysis</button></div>
+   </div>
 
    <div id="progress">
      <div class="steps">
@@ -347,23 +556,201 @@
 
 <script>
 function go(page, anchor){
-  document.getElementById('page-home').style.display    = page==='home' ? '' : 'none';
+  document.getElementById('page-reports').style.display = page==='reports' ? 'block' : 'none';
+  document.querySelectorAll('nav a').forEach(function(link){
+    if(link.hash==='#'+page){ link.setAttribute('aria-current','page'); } else { link.removeAttribute('aria-current'); }
+  });
+  document.getElementById('page-home').style.display = page==='home' ? '' : 'none';
   document.getElementById('page-scanner').style.display = page==='scanner' ? 'block' : 'none';
-  window.scrollTo(0,0);
-  if(anchor){ setTimeout(function(){ var el=document.getElementById(anchor);
-    if(el) el.scrollIntoView({behavior:'smooth'}); },50); }
+  if(anchor==='research'){ document.querySelector('#research details').open=true; }
+  if(anchor){ document.getElementById(anchor)?.scrollIntoView(); }
+  else { window.scrollTo(0,0); }
 }
+function route(){
+  var anchor=location.hash.slice(1);
+  go(['scanner','reports'].includes(anchor) ? anchor : 'home', ['example','research'].includes(anchor) ? anchor : null);
+}
+window.addEventListener('hashchange',route);
+route();
+
+/* Recorded findings: display the allowlisted snapshot as text, never HTML. */
+function reportText(tag,value,className){
+ const node=document.createElement(tag); node.textContent=value;
+ if(className) node.className=className;
+ return node;
+}
+// Frozen selection from the August 13 snapshot, ranked by flagged move count.
+const featuredSkills=['telegram-telethon','xlsx','daydream','thinking-patterns','telegram'];
+const harmMeanings={
+ 'Secondary Use':'Personal data is repurposed beyond the reason it was collected. That change can undermine a person’s choices about how their information is used.',
+ 'Breach of Confidentiality':'Information entrusted to someone is shared contrary to a confidentiality commitment. The harm involves breaking that trust, not simply moving data.',
+ 'Exclusion':'People are denied awareness of, or participation in, how their personal information is handled. They cannot meaningfully review or influence its use.',
+ 'Increased Accessibility':'Personal information becomes easier for others to find or obtain. Even previously available information can create new exposure when access expands.',
+ 'Inference':'Existing information is used to derive new conclusions about a person, such as their health or relationships. SkillXray adds this category to capture sensitive deductions, even when the underlying data stays local.',
+ 'Surveillance':'Someone’s behavior is observed or recorded. This scrutiny can diminish privacy in everyday activities.',
+ 'Aggregation':'Separate pieces of personal information are brought together. The combined picture can reveal more than any individual piece.',
+ 'Disclosure':'Personal facts are revealed to others. That revelation can affect the person’s reputation or security.'
+};
+function explainHarm(category){
+ document.querySelectorAll('.harm-category-button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.harm===category)));
+ document.getElementById('harm-meaning-title').textContent=category==='all'?'What do these harms mean?':category;
+ document.getElementById('harm-meaning').textContent=harmMeanings[category]||'Choose a harm category to see its general meaning. The labels draw on Solove’s privacy taxonomy, with Inference added by SkillXray.';
+ document.getElementById('harm-meaning-source').hidden=category==='Inference';
+}
+let recordedRun=null;
+function renderRecordedReports(){
+ if(!recordedRun) return;
+ const query=document.getElementById('report-search').value.trim().toLowerCase();
+ const category=document.getElementById('harm-filter').value;
+ const status=document.getElementById('flag-filter').value;
+ const others=recordedRun.reports.filter(r=>!featuredSkills.includes(r.skill));
+ const reports=others.filter(r=>r.skill.toLowerCase().includes(query) &&
+  (category==='all'||r.findings.some(f=>f.harm===category)) &&
+  (status==='all'||(status==='flagged'?r.findings.length>0:r.findings.length===0)));
+ const list=document.getElementById('recorded-report-list');list.replaceChildren();
+ document.getElementById('finding-count').textContent=reports.length+' of '+others.length+' other skills · most flags first';
+ if(!reports.length) list.append(reportText('li','No skills match these filters.','threat-item'));
+ appendReportRows(list,reports,category);
+}
+function appendReportRows(list,reports,category){
+ reports.forEach(report=>{
+  const row=reportText('li','','threat-item'), details=document.createElement('details');details.className='skill-report';
+  const summary=document.createElement('summary');
+  summary.append(reportText('span',report.skill,'skill-name'),reportText('span',report.findings.length+' total potential '+(report.findings.length===1?'flag':'flags'),'report-count'));
+  details.append(summary);
+  row.append(details);
+  const meta=report.moves+' data moves · '+report.source+' · Severity: not assessed';
+  details.append(reportText('p',meta,'connection-note'));
+  report.notes.forEach(note=>details.append(reportText('p',note,'review-note')));
+  if(!report.findings.length) details.append(reportText('p','No potential violations were flagged in this run. This is not a certification of safety.'));
+  const findings=report.findings.filter(f=>category==='all'||f.harm===category);
+  if(category!=='all') details.append(reportText('p',findings.length+' flags in '+category,'connection-note'));
+  findings.forEach(f=>{
+   const item=reportText('div','','recorded-finding');
+   const heading=reportText('div','','threat-top');
+   heading.append(reportText('h3',f.harm),reportText('span','Severity: not assessed','severity severity-unrated'));
+   item.append(heading,reportText('p',f.kind+' · '+f.data,'connection-note'),reportText('p',f.reason));
+   const evidence=document.createElement('details');
+   evidence.append(reportText('summary','View recorded evidence'));
+   evidence.append(reportText('p',f.evidence.file+(f.evidence.lines.length?':'+f.evidence.lines.join(', '):''),'evidence-note'));
+   evidence.append(reportText('pre',f.evidence.snippet||'No snippet recorded.','report-evidence'));
+   evidence.append(reportText('p','Verdict confidence: '+f.confidence+' · Record: '+f.id,'evidence-note'));
+   item.append(evidence);details.append(item);
+  });
+  const tags=[...new Set(report.findings.map(f=>f.harm))];
+  row.append(reportText('p',tags.join(' · ')||'No potential violations flagged','connection-note'));
+  if(report.notes.length) row.append(reportText('span','Review context available','review-badge'));
+  list.append(row);
+ });
+}
+async function loadRecordedRun(){
+ try {
+  const response=await fetch('findings-data.json');
+  if(!response.ok) throw new Error('Unable to load recorded results.');
+  const data=await response.json();
+  if(data.schema_version!==1||!Array.isArray(data.reports)) throw new Error('Invalid results snapshot.');
+  recordedRun=data;
+  appendReportRows(document.getElementById('featured-report-list'),featuredSkills.map(name=>data.reports.find(r=>r.skill===name)).filter(Boolean),'all');
+  const stats=document.getElementById('run-stats');
+  [[data.summary.analyzed,'skills analyzed'],[data.summary.with_potential_violation,'skills with potential flags'],[data.summary.total_violations,'potential violations'],[data.summary.total_moves.toLocaleString(),'data moves reviewed']].forEach(([number,label])=>{
+   const stat=reportText('div','','run-stat');stat.append(reportText('strong',number),reportText('span',label));stats.append(stat);
+  });
+  const ranking=document.getElementById('harm-ranking');
+  data.categories.slice().sort((a,b)=>b.skills-a.skills||b.flags-a.flags).forEach(category=>{
+   const row=reportText('li','','harm-rank');
+   const button=reportText('button','','harm-category-button');
+   button.type='button';button.dataset.harm=category.name;
+   button.setAttribute('aria-pressed','false');button.setAttribute('aria-controls','harm-definition');
+   button.append(reportText('strong',category.name),reportText('span',category.skills+' / '+data.summary.analyzed+' skills · '+category.flags+' flags'));
+   button.addEventListener('pointerenter',event=>{if(event.pointerType!=='touch') explainHarm(category.name);});
+   button.addEventListener('focus',()=>explainHarm(category.name));
+   button.addEventListener('click',()=>explainHarm(category.name));
+   row.append(button);
+   ranking.append(row);
+   const option=reportText('option',category.name);option.value=category.name;document.getElementById('harm-filter').append(option);
+  });
+  explainHarm(data.categories.slice().sort((a,b)=>b.skills-a.skills||b.flags-a.flags)[0].name);
+  document.getElementById('recorded-results').hidden=false;
+  document.getElementById('report-load').textContent='';
+  renderRecordedReports();
+ } catch(error){ document.getElementById('report-load').textContent='The recorded findings could not be loaded. Refresh to try again.'; }
+}
+document.getElementById('report-search').addEventListener('input',renderRecordedReports);
+document.getElementById('harm-filter').addEventListener('change',renderRecordedReports);
+document.getElementById('flag-filter').addEventListener('change',renderRecordedReports);
+loadRecordedRun();
+
 /* ============ live scanner: POST /scan -> poll /status -> GET /card ============ */
-// Where the backend lives. Served by the backend itself (always port 8080,
-// locally or on a server) -> same origin (""). Anywhere else — GitHub Pages,
-// file://, a static dev server — there is no backend at this origin, so talk
-// to the visitor's own local backend at localhost:8080 (CORS-enabled there;
-// browsers exempt localhost from mixed-content blocking on https pages).
-var API = (location.port === "8080") ? "" : "http://localhost:8080";
+// Set the hosted HTTPS API in config.js. Never fall back to visitors' localhost
+// on the public site. Local development can use the backend at port 8080.
+var configuredAPI = window.SKILLXRAY_API_BASE;
+var localHost = ['localhost','127.0.0.1','[::1]'].indexOf(location.hostname) !== -1;
+var API = typeof configuredAPI === 'string' ? configuredAPI.replace(/\/$/,'') :
+  (localHost ? (location.port === '8080' ? '' : 'http://localhost:8080') : null);
+var serviceReady=false, busy=false, scanToken=null, reportURL=null;
+function setBusy(value){
+  busy=value;
+  document.getElementById('scan-button').disabled=value || !serviceReady;
+  document.getElementById('test-connection').disabled=value || !serviceReady || document.getElementById('provider').value==='server';
+}
+function providerChanged(){
+  var provider=document.getElementById('provider').value;
+  document.getElementById('api-key').value='';
+  document.getElementById('api-key').type='password';
+  document.getElementById('key-toggle').textContent='Show';
+  document.getElementById('key-toggle').setAttribute('aria-label','Show API key');
+  document.getElementById('model').value=provider==='openai'?'gpt-4o':provider==='anthropic'?'claude-sonnet-4-6':'';
+  ['model-field','key-field','model-note','key-note'].forEach(function(id){document.getElementById(id).style.display=provider==='server'?'none':'';});
+  document.getElementById('gateway-field').style.display=provider==='litellm'?'':'none';
+  document.getElementById('connection-status').textContent='';
+  setBusy(busy);
+}
+function toggleKey(){
+  var input=document.getElementById('api-key'), show=input.type==='password';
+  input.type=show?'text':'password';
+  document.getElementById('key-toggle').textContent=show?'Hide':'Show';
+  document.getElementById('key-toggle').setAttribute('aria-label',show?'Hide API key':'Show API key');
+}
+function connectionSettings(){
+  if(!serviceReady) throw new Error('The scan service is unavailable. Please try again later.');
+  var provider=document.getElementById('provider').value;
+  if(provider==='server') return null;
+  var key=document.getElementById('api-key').value.trim(), model=document.getElementById('model').value.trim();
+  if(!key){ document.getElementById('api-key').focus(); throw new Error('Paste your API key before continuing.'); }
+  if(!model){ document.getElementById('model').focus(); throw new Error('Enter a model available to your account.'); }
+  return {provider:provider,model:model,api_key:key,base_url:provider==='litellm'?document.getElementById('gateway').value:''};
+}
+function authHeaders(){ return scanToken?{Authorization:'Bearer '+scanToken}:{}; }
+function responseJSON(response){
+  return response.json().then(function(data){if(!response.ok) throw new Error(typeof data.detail==='string'?data.detail:'The request failed.');return data;});
+}
+function testConnection(){
+  var connection;
+  try {connection=connectionSettings();} catch(error){document.getElementById('connection-status').textContent=' '+error.message;return;}
+  setBusy(true);
+  document.getElementById('connection-status').textContent=' Checking…';
+  fetch(API+'/connection/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(connection)})
+    .then(responseJSON).then(function(data){document.getElementById('connection-status').textContent=' '+data.message;})
+    .catch(function(error){document.getElementById('connection-status').textContent=' '+error.message;})
+    .finally(function(){setBusy(false);});
+}
+(function connectService(){
+  if(API===null){document.getElementById('service-status').textContent='Online scanning is being set up. Please check back soon.';return;}
+  if(API && !/^https:\/\//.test(API) && !localHost){document.getElementById('service-status').textContent='The scan service needs a secure HTTPS connection.';return;}
+  fetch(API+'/capabilities').then(responseJSON).then(function(data){
+    if(data.providers.indexOf('litellm')!==-1){
+      document.getElementById('provider').add(new Option('LiteLLM · use my key','litellm'));
+      data.gateways.forEach(function(url){document.getElementById('gateway').add(new Option(url,url));});
+    }
+    if(data.server_connection) document.getElementById('provider').add(new Option('Use configured server','server'));
+    serviceReady=true;setBusy(false);
+    document.getElementById('service-status').textContent='Scan service connected';
+  }).catch(function(){document.getElementById('service-status').textContent='The scan service is unavailable. Refresh to try again.';});
+})();
 var pollTimer = null;
 
 function demo(){ document.getElementById('url').value =
-  "https://github.com/glebis/claude-skills/tree/main/zoom"; startScan(); }
+  "https://github.com/glebis/claude-skills/tree/main/zoom"; }
 
 function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
 function logLine(msg){ var log=document.getElementById('log');
@@ -388,6 +775,8 @@ function paintSteps(active, allDone){
 var currentScanId = null;
 
 function beginRun(){
+  setBusy(true); scanToken=null;
+  if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null;}
   if(pollTimer) clearInterval(pollTimer);
   currentScanId = null;
   document.getElementById('stopbtn').style.display='none';
@@ -401,6 +790,9 @@ function handleAccepted(res){
   if(!res.ok){ showError(res.body.detail || "request rejected"); return; }
   logLine("→ accepted, scan id " + res.body.scan_id);
   currentScanId = res.body.scan_id;
+  scanToken=res.body.access_token || null;
+  document.getElementById("api-key").value="";
+  if(res.body.provider) logLine("→ " + res.body.provider + " / " + res.body.model);
   document.getElementById('stopbtn').style.display='block';
   poll(res.body.scan_id);
 }
@@ -410,11 +802,11 @@ function cancelScan(){
   var id = currentScanId;
   document.getElementById('stopbtn').style.display='none';
   logLine("✕ stopping…");
-  fetch(API + "/scan/" + id + "/cancel", { method:"POST" })
+  fetch(API + "/scan/" + id + "/cancel", { method:"POST", headers:authHeaders() })
     .then(function(r){ return r.json(); })
     .then(function(res){
       if(pollTimer) clearInterval(pollTimer);
-      currentScanId = null;
+      currentScanId = null; setBusy(false);
       if(res.status === 'cancelled'){ logLine("✕ scan cancelled"); }
       else { logLine("— too late to cancel: scan already " + res.status); }
     })
@@ -422,13 +814,16 @@ function cancelScan(){
 }
 
 function startScan(){
+  if(busy) return;
+  var connection;
+  try {connection=connectionSettings();} catch(error){showError(error.message);return;}
   var url = document.getElementById('url').value.trim();
   if(!url){ document.getElementById('url').focus(); return; }
   beginRun();
   logLine("→ submitting " + url);
 
   fetch(API + "/scan", { method:"POST",
-      headers:{ "Content-Type":"application/json" }, body: JSON.stringify({url:url}) })
+      headers:{ "Content-Type":"application/json" }, body: JSON.stringify({url:url,connection:connection}) })
     .then(function(r){ return r.json().then(function(b){ return {ok:r.ok, body:b}; }); })
     .then(handleAccepted)
     .catch(function(){ showError("cannot reach the scan service — is the backend running?"); });
@@ -505,12 +900,15 @@ function unstageFolder(){
 }
 
 function submitStaged(){
-  if(!staged) return;
+  if(!staged || busy) return;
+  var connection;
+  try {connection=connectionSettings();} catch(error){showError(error.message);return;}
   var files = staged.files;
   unstageFolder();
   beginRun();
   logLine("→ uploading " + files.length + " file" + (files.length===1?"":"s"));
   var fd = new FormData();
+  if(connection) fd.append("connection",JSON.stringify(connection));
   files.forEach(function(f){ fd.append("files", f, pathOf(f)); });
   fetch(API + "/scan/upload", { method:"POST", body: fd })
     .then(function(r){ return r.json().then(function(b){ return {ok:r.ok, body:b}; }); })
@@ -570,22 +968,23 @@ function readEntry(entry, path){
 function poll(scanId){
   var lastStep = "";
   pollTimer = setInterval(function(){
-    fetch(API + "/status/" + scanId).then(function(r){ return r.json(); })
+    fetch(API + "/status/" + scanId, {headers:authHeaders()}).then(responseJSON)
       .then(function(st){
         if(st.step && st.step !== lastStep){ lastStep = st.step; logLine("… " + st.step); }
         paintSteps(segFor(st.status, st.step), false);
         var over = st.status === 'done' || st.status === 'failed' || st.status === 'cancelled';
-        if(over){ clearInterval(pollTimer); currentScanId = null;
+        if(over){ clearInterval(pollTimer); currentScanId = null; if(st.status!=='done') setBusy(false);
                   document.getElementById('stopbtn').style.display='none'; }
         if(st.status === 'done'){ paintSteps(0, true); showCard(scanId); }
         if(st.status === 'failed'){ showError(st.error); }
         if(st.status === 'cancelled'){ logLine("✕ scan cancelled"); }
       })
-      .catch(function(){ /* transient network blip while polling: just retry */ });
+      .catch(function(error){ clearInterval(pollTimer); showError(error.message+" Refreshing loses access to this scan."); });
   }, 2500);
 }
 
 function showError(msg){
+  setBusy(false);
   document.getElementById('progress').style.display='none';
   var r = document.getElementById('result');
   r.innerHTML = '<div class="vsum">✗ ' + esc(msg) + '</div>';
@@ -593,24 +992,32 @@ function showError(msg){
 }
 
 function showCard(scanId){
-  fetch(API + "/card/" + scanId).then(function(r){ return r.json(); })
-    .then(function(card){
-      document.getElementById('progress').style.display='none';
-      var r = document.getElementById('result');
-      if(card.skipped){
-        r.innerHTML = '<div class="advice"><b>Not privacy-relevant:</b> ' + esc(card.reason) +
-          ' — this skill touches no personal data, so no Privacy Facts label is needed.</div>';
-      } else {
-        // show the pipeline's OWN card, unmodified — the single source of visual truth
-        r.innerHTML = '<iframe src="' + API + '/card/' + scanId + '/html" ' +
-          'style="width:100%;height:900px;border:2.5px solid var(--rule);background:#fff" ' +
-          'title="Privacy Facts card"></iframe>' +
-          '<p class="meta"><a href="' + API + '/card/' + scanId + '/html" target="_blank">' +
-          'open the card in its own tab</a></p>';
-      }
-      r.style.display='block';
+  var headers=authHeaders();
+  fetch(API+'/card/'+scanId,{headers:headers}).then(responseJSON).then(function(card){
+    var result=document.getElementById('result');
+    document.getElementById('progress').style.display='none';
+    result.style.display='block';
+    if(card.skipped){result.innerHTML='<div class="advice"><b>Analysis skipped:</b> '+esc(card.reason)+'</div>';return;}
+    return fetch(API+'/card/'+scanId+'/html',{headers:headers}).then(function(response){
+      if(!response.ok) throw new Error('The report could not be loaded.');
+      return response.text();
+    }).then(function(html){
+      var policy='<meta http-equiv="Content-Security-Policy" content="default-src &apos;none&apos;; style-src &apos;unsafe-inline&apos;; img-src data:">';
+      reportURL=URL.createObjectURL(new Blob([policy,html],{type:'text/html'}));
+      result.innerHTML='';
+      var info=document.createElement('p');info.className='meta';
+      info.textContent=card.connection ? 'Analyzed with '+card.connection.provider+' / '+card.connection.model : 'Analysis complete';
+      result.appendChild(info);
+      var frame=document.createElement('iframe');frame.title='Privacy Facts card';
+      frame.setAttribute('sandbox','');frame.src=reportURL;
+      frame.style.cssText='width:100%;height:900px;border:2.5px solid var(--rule);background:#fff';
+      result.appendChild(frame);
+      var download=document.createElement('a');download.href=reportURL;download.download='skillxray-report.html';download.textContent='Download report';
+      result.appendChild(download);
     });
+  }).catch(function(error){showError(error.message);}).finally(function(){setBusy(false);});
 }
+
 
 
 </script>
