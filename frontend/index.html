@@ -3,1023 +3,1143 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SkillXray — Privacy Facts for AI Agent Skills</title>
-<meta name="description" content="Inspect an AI skill before installing it. Explore privacy findings with evidence from its code, or scan a skill using your own provider.">
-<script src="config.js"></script>
+<title>SkillXray — See what a skill does with your data</title>
+<meta name="description" content="Before you install an AI agent skill, see what its code actually does with your data. SkillXray reads the skill without running it and gives you a plain-language Privacy Card.">
+<meta property="og:title" content="SkillXray — See what a skill does with your data">
+<meta property="og:description" content="A skill says one thing. Its code does another. Read any skill's code before you install it, and get a plain-language Privacy Card.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0e9aab">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#ffffff; --surface:#f5f8f8; --card:#ffffff;
+  --ink:#1b2422; --muted:#697370; --line:#e6ebea;
+  --brand:#0e9aab; --brand-ink:#0a6b78; --brand-soft:#e6f6f8; --brand-bright:#52dee5;
+  --amber:#f0a828; --amber-soft:#fdf3e2; --amber-ink:#8a5a06;
+  --code-bg:#f2f6f6;
+  --term-bg:#12201f; --term-ink:#d7e6e2; --term-dim:#7f948f; --term-cyan:#5fd8e0; --term-green:#7fd6a0;
+  /* validated 8-hue set, softened a step lighter */
+  --c1:#5590dd; --c2:#f0835a; --c3:#3cba90; --c4:#f2b23c;
+  --c5:#ee97b7; --c6:#35a244; --c7:#6f60c1; --c8:#e8706f;
+  --shadow:0 1px 2px rgba(16,30,28,.04), 0 10px 30px rgba(16,30,28,.06);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:Figtree,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.say{font-family:Fraunces,Georgia,serif;font-style:italic}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:560;letter-spacing:-.01em;
+  text-wrap:balance;margin:0}
+a{color:var(--brand-ink)}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px;border-radius:2px}
+
+/* nav */
+nav{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:26px;
+  padding:14px 24px;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line)}
+.brand{font-family:Fraunces,serif;font-weight:600;font-size:20px;margin-right:auto;
+  letter-spacing:-.02em;text-decoration:none;color:var(--ink)}
+.brand b{color:var(--brand)}
+nav .lnk{color:var(--ink);text-decoration:none;font-size:14.5px;font-weight:600;opacity:.78}
+nav .lnk:hover{opacity:1;color:var(--brand-ink)}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--brand);color:#fff;
+  border:0;border-radius:10px;padding:11px 20px;font:inherit;font-weight:700;font-size:15px;
+  cursor:pointer;text-decoration:none;box-shadow:var(--shadow)}
+.btn:hover{background:var(--brand-ink)}
+@media(max-width:620px){ nav .lnk.hide-sm{display:none} }
+
+/* hero */
+.hero{padding:70px 0 32px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--brand-ink);
+  background:var(--brand-soft);padding:6px 12px;border-radius:100px;margin-bottom:20px}
+.hero h1{font-size:clamp(31px,4vw,46px);line-height:1.1;max-width:24ch;letter-spacing:-.01em}
+.hero h1 em{font-style:normal;color:var(--brand)}
+.hero .sub{font-size:18px;color:var(--muted);max-width:46ch;margin:20px 0 26px}
+.hero .sub .hl{color:var(--brand-ink);font-weight:600;background:var(--brand-soft);padding:1px 7px;border-radius:6px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.hero-cta{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.hero-cta .plain{color:var(--ink);font-weight:600;text-decoration:none;font-size:15px}
+.hero-cta .plain:hover{color:var(--brand-ink)}
+@media(max-width:880px){ .hero h1{max-width:24ch} }
+
+/* stat strip — the hero's proof */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:48px 0 0}
+.stat{background:var(--card);padding:26px 26px}
+.stat b{font-family:Fraunces,serif;font-size:44px;font-weight:580;line-height:1;
+  display:block;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:14px;display:block;margin-top:9px;max-width:26ch}
+.stat.flag b{color:var(--amber-ink)}
+@media(max-width:620px){ .stats{grid-template-columns:1fr} }
+
+/* section frame */
+section{padding:62px 0}
+.band{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sec-head .kicker{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--brand-ink);margin:0 0 11px;display:flex;align-items:center;gap:9px}
+.sec-head .kicker::before{content:"";width:22px;height:2px;background:var(--brand);border-radius:2px;flex:none}
+.sec-head h2{font-size:clamp(27px,4vw,37px);margin:0}
+.sec-head p{color:var(--muted);margin:12px 0 0;max-width:60ch;font-size:16px}
+
+/* chart */
+.chart{margin-top:28px;display:flex;flex-direction:column;gap:3px}
+.crow{padding:11px 12px;border-radius:12px;transition:background .15s;cursor:default}
+.crow:hover{background:#eef7f8}
+.crow .rlabel{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:8px}
+.crow .rlabel .name{font-weight:650;font-size:15.5px}
+.crow .rlabel .name small{display:block;font-weight:500;color:var(--muted);font-size:12px;
+  font-family:"JetBrains Mono",monospace;letter-spacing:0;margin-top:2px}
+.crow .rlabel .cnt{font-family:Fraunces,serif;font-size:21px;font-weight:560;
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.track{height:14px;background:#e7eeee;border-radius:100px;overflow:hidden}
+.fill{height:100%;border-radius:100px;min-width:6px}
+.chart-note{color:var(--muted);font-size:13.5px;margin:22px 0 0;padding:0 12px}
+
+/* master-detail: pick a skill (left) -> its Privacy Card (right) */
+.mdx{display:grid;grid-template-columns:minmax(234px,300px) 1fr;gap:24px;align-items:start;margin-top:28px}
+.md-list{display:flex;flex-direction:column;gap:8px;position:sticky;top:78px}
+.md-lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);padding:0 2px 2px;display:flex;align-items:center;gap:7px}
+.md-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;font:inherit;cursor:pointer;
+  background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;
+  transition:border-color .15s,background .15s,box-shadow .15s}
+.md-item:hover{border-color:var(--brand)}
+.md-item.selected{border-color:var(--brand);background:var(--brand-soft);box-shadow:var(--shadow)}
+.md-item .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.md-item .md-txt{flex:1;min-width:0}
+.md-item .nm{display:block;font-family:"JetBrains Mono",monospace;font-size:12.5px;font-weight:600;
+  color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.md-item .desc{display:block;font-size:12px;color:var(--muted);line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.md-item.selected .desc{color:var(--brand-ink)}
+.md-item .md-flag{flex:none;font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:700;
+  color:var(--amber-ink);background:var(--amber-soft);border-radius:100px;padding:3px 8px}
+.md-detail{min-width:0}
+@media(max-width:760px){ .mdx{grid-template-columns:1fr} .md-list{position:static} }
+
+/* scanner */
+.scan{background:var(--card);border:1px solid var(--line);border-radius:18px;
+  box-shadow:var(--shadow);padding:26px;margin-top:28px}
+.field{display:flex;gap:10px;flex-wrap:wrap}
+.field input[type=text]{flex:1;min-width:230px;padding:14px 16px;font:inherit;font-size:15px;
+  border:1.5px solid var(--line);border-radius:11px;background:var(--bg);color:var(--ink)}
+.field input:focus{border-color:var(--brand);outline:none}
+.or{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:12px;
+  letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin:16px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.drop{border:2px dashed var(--line);border-radius:14px;padding:22px;text-align:center;cursor:pointer}
+.drop:hover{border-color:var(--brand);background:var(--surface)}
+.drop b{font-size:15px} .drop span{color:var(--muted);font-size:13.5px;display:block;margin-top:4px}
+.scan-hint{color:var(--muted);font-size:13px;margin:14px 0 0}
+.keyrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.keyrow label{font-size:14px;color:var(--muted);font-weight:650}
+.keyrow select{font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;
+  padding:9px 10px;background:var(--bg);color:var(--ink)}
+.keyrow input{flex:1;min-width:220px;padding:11px 13px;font:inherit;font-size:14.5px;
+  border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);
+  font-family:"JetBrains Mono",monospace}
+.keyrow input:focus,.keyrow select:focus{border-color:var(--brand);outline:none}
+
+/* run-mode chooser */
+.modes{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.modes-lab{font-size:12px;font-weight:750;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.05em;margin:0 0 12px}
+.mode-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.mode-opts{grid-template-columns:1fr}}
+.mode{text-align:left;border:1.5px solid var(--line);border-radius:13px;padding:14px 15px;
+  background:var(--bg);cursor:pointer;font:inherit;transition:border-color .15s,background .15s}
+.mode:hover{border-color:var(--brand-bright)}
+.mode.sel{border-color:var(--brand);background:var(--brand-soft)}
+.mode .mt{font-size:14.5px;font-weight:750;color:var(--ink);display:flex;align-items:center;gap:8px}
+.mode .tag{font-size:11px;font-weight:750;padding:2px 8px;border-radius:999px;
+  background:var(--brand);color:#fff;letter-spacing:.02em}
+.mode .md{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+.mode .meta{font-size:11.5px;color:var(--brand-ink);font-weight:700;margin-top:8px}
+.mode-detail{margin-top:14px}
+.mode-panel{display:none}
+.mode-panel.on{display:block}
+
+/* live progress */
+.progress{margin-top:22px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.progress .pnote{padding:15px 18px;font-size:14px;color:var(--ink);line-height:1.55;
+  background:var(--amber-soft);border-bottom:1px solid var(--line)}
+.progress .pnote b{color:var(--amber-ink)}
+.progress .pnote a{font-weight:700}
+.progress .phead{display:flex;align-items:center;gap:10px;padding:13px 18px;
+  background:var(--surface);border-bottom:1px solid var(--line);font-size:13.5px;font-weight:650}
+.progress .phead .nm{color:var(--muted);font-weight:500;font-family:"JetBrains Mono",monospace;font-size:12.5px}
+.progress .phead .live{width:8px;height:8px;border-radius:50%;background:var(--brand);
+  box-shadow:0 0 0 0 rgba(14,154,171,.5);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(14,154,171,.45)}70%{box-shadow:0 0 0 7px rgba(14,154,171,0)}100%{box-shadow:0 0 0 0 rgba(14,154,171,0)}}
+.steps{list-style:none;margin:0;padding:8px 0}
+.steps li{display:flex;gap:12px;padding:9px 18px;align-items:flex-start}
+.steps .ic{flex:none;width:20px;height:20px;border-radius:50%;margin-top:1px;
+  display:grid;place-items:center;font-size:12px;font-weight:800;
+  border:2px solid var(--line);color:var(--muted);background:var(--bg)}
+.steps li.done .ic{background:var(--brand);border-color:var(--brand);color:#fff}
+.steps li.done .ic::after{content:"✓"}
+.steps li.active .ic{border-color:var(--brand);border-top-color:transparent;color:transparent;
+  animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.steps .txt{font-size:15px;font-weight:600}
+.steps li.pending .txt{color:var(--muted);font-weight:500}
+.steps .sub{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--muted);
+  margin-top:3px;display:none}
+.steps li.done .sub{display:block}
+.pfoot{padding:14px 18px;border-top:1px solid var(--line);display:none;align-items:center;
+  justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pfoot.show{display:flex}
+.pfoot .ok{font-size:14px;font-weight:650;color:var(--brand-ink)}
+
+/* local terminal */
+.local{margin-top:26px}
+.local .lead{font-size:15.5px;color:var(--ink);margin:0 0 14px}
+.local .lead b{font-weight:700}
+.term{background:var(--term-bg);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.term .bar{display:flex;align-items:center;gap:7px;padding:11px 14px;background:rgba(255,255,255,.04)}
+.term .bar i{width:11px;height:11px;border-radius:50%;display:block}
+.term .bar .t{margin-left:8px;color:var(--term-dim);font-size:12px;font-family:"JetBrains Mono",monospace}
+.term .bar .copy{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:600;
+  color:var(--term-ink);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:7px;padding:4px 12px;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.term .bar .copy:hover{background:rgba(255,255,255,.17)}
+.term .bar .copy.done{color:var(--term-green);border-color:transparent;background:rgba(39,201,63,.14)}
+.term pre{margin:0;padding:16px 18px;overflow-x:auto;
+  font-family:"JetBrains Mono",monospace;font-size:12.8px;line-height:1.9;color:var(--term-ink)}
+.term .c{color:var(--term-dim)}
+.term .p{color:var(--term-cyan)}
+.term .g{color:var(--term-green)}
+
+/* privacy card — sits on its own cool tinted "report" surface */
+.card{background:linear-gradient(180deg,#f3fafb 0%,#e9f5f6 100%);
+  border:1px solid #cfe7ea;border-radius:16px;overflow:hidden;
+  box-shadow:0 1px 2px rgba(16,30,28,.05), 0 20px 46px rgba(14,120,130,.10)}
+.card .top{padding:16px 22px;border-bottom:1px solid #d7ebee;
+  display:flex;align-items:center;justify-content:space-between;gap:12px}
+/* "what it says vs what it does" folded into the top of the card */
+.pc-lead{padding:20px 22px;border-bottom:1px solid #d7ebee}
+.pc-lead .k{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:0 0 7px}
+.pc-lead .k-say{color:var(--muted)}
+.pc-lead .k-does{color:var(--brand-ink);margin-top:16px;padding-top:15px;border-top:1px solid #e4eef0}
+.pc-lead .say-line{font-size:16.5px;line-height:1.45;color:var(--muted)}
+.pc-lead p{margin:0;font-size:16.5px;color:var(--ink);line-height:1.55;font-weight:500}
+.card .top .t{font-family:Fraunces,serif;font-size:20px;font-weight:580}
+.card .top .tag{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:500;color:var(--brand-ink);
+  background:var(--brand-soft);padding:5px 11px;border-radius:100px}
+.crow2{padding:14px 22px;border-bottom:1px solid #d7ebee}
+.crow2 .k{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.crow2 .v{font-size:16px;margin-top:3px}
+.crow2.watch{background:var(--amber-soft)}
+.crow2.watch .k{color:var(--amber-ink)}
+.evidence{padding:14px 22px}
+.evidence summary{cursor:pointer;font-weight:650;font-size:14.5px;color:var(--brand-ink)}
+.evidence pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
+  padding:14px;font-family:"JetBrains Mono",monospace;font-size:12.5px;line-height:1.7;
+  overflow-x:auto;margin:12px 0 0}
+.evidence .loc{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted);margin:10px 0 0}
+
+/* provenance line — how SkillXray knows */
+.prov{padding:13px 22px;border-bottom:1px solid #d7ebee;
+  font-size:13px;color:var(--muted);line-height:1.5}
+
+/* card sections */
+.pc-sec{padding:16px 16px 6px}
+.pc-sec.fine{padding-bottom:16px}
+.pc-sec-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;
+  gap:4px 12px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--muted);padding:0 6px 8px}
+.pc-count{font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:500;
+  text-transform:none;letter-spacing:0;color:var(--muted);white-space:nowrap}
+
+/* category-led finding rows */
+.flist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.fitem{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--card)}
+.fhead{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;
+  border:0;font:inherit;cursor:pointer;padding:12px 14px}
+.fhead:hover{background:var(--surface)}
+.fhead .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.fhead .ftitle{flex:1;line-height:1.35;min-width:0}
+.fhead .dcat{display:block;font-weight:700;font-size:14.5px}
+.fhead .dwhat{display:block;font-size:13px;color:var(--muted);margin-top:1px}
+.fhead .flag{font-size:11px;font-weight:700;white-space:nowrap;color:var(--amber-ink);
+  background:var(--amber-soft);padding:3px 9px;border-radius:100px;flex:none}
+.fhead .chev{color:var(--muted);flex:none;transition:transform .18s;font-size:13px}
+.fhead[aria-expanded="true"] .chev{transform:rotate(90deg);color:var(--brand-ink)}
+.fbody{padding:0 14px 14px 34px}
+.fbody .fwhy{margin:0 0 8px;font-size:14px;color:var(--ink);line-height:1.5}
+.fbody .fkind-full{font-size:12.5px;color:var(--muted);margin:8px 0 0}
+.fbody .loc{font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--muted);margin:0 0 8px}
+.fbody pre{background:var(--code-bg);border:1px solid var(--line);border-radius:9px;
+  padding:12px;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.65;
+  overflow-x:auto;margin:0}
+
+/* "looks fine" reassurance group */
+.finelist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.finelist li{display:flex;align-items:flex-start;gap:10px;padding:9px 8px;
+  font-size:14px;color:var(--muted);line-height:1.45}
+.finelist .tick{color:var(--brand);font-weight:800;flex:none;line-height:1.45}
+
+/* how it works */
+.how{background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  padding:34px 32px;box-shadow:var(--shadow)}
+.how ol{list-style:none;counter-reset:s;margin:22px 0 0;padding:0;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.how li .num{width:30px;height:30px;border-radius:9px;background:var(--brand);color:#fff;
+  display:grid;place-items:center;font-weight:800;font-size:15px;margin-bottom:12px}
+.how li b{font-size:16px;font-family:Fraunces,serif;font-weight:580}
+.how li p{margin:5px 0 0;color:var(--muted);font-size:14.5px}
+@media(max-width:640px){ .how ol{grid-template-columns:1fr} }
+
+footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
+.foot{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center}
+.foot-brand{font-family:Fraunces,serif;font-weight:600;font-size:19px;color:var(--ink);letter-spacing:-.02em}
+.foot-brand b{color:var(--brand)}
+.foot p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.7;max-width:56ch}
+.mock{background:var(--amber-soft);color:var(--amber-ink);text-align:center;
+  font-size:13px;font-weight:600;padding:8px 16px}
+@media(prefers-reduced-motion:reduce){ .steps li.active .ic,.progress .phead .live,.md-item{animation:none;transition:none} }
+</style>
 </head>
 <body>
-<style>
- /* ============ tokens — "privacy facts label" system ============
-    Liberty-inspired seafoam, black, white, and copper;
-    serif italic = the skill's marketing voice; mono = the code's voice. */
- :root {
-   --paper:#F7FAF8; --surface:#FFFFFF; --ink:#101413; --muted:#53615B;
-   --teal:#6ECEB2; --teal-ink:#17614D;
-   --bad:#B3261E; --bad-bg:#F9E9E7; --good:#2C6E49; --good-bg:#E9F2EC;
-   --hilite:#C07D59; --hilite-bg:#F5EAE3;
-   --rule:#101413; --hairline:#D6E0DA; --code-bg:#EFF4F1;
-   --film:#0D1417; --film-ink:#D2F2E6;
- }
- @media (prefers-color-scheme: dark) { :root {
-   --paper:#101416; --surface:#171C1F; --ink:#ECEFEA; --muted:#9AA6A4;
-   --teal:#6ECEB2; --teal-ink:#8DDCC2;
-   --bad:#E5766D; --bad-bg:#33201E; --good:#6FBF8F; --good-bg:#1C2B22;
-   --hilite:#DCA17F; --hilite-bg:#30251F;
-   --rule:#ECEFEA; --hairline:#2E3538; --code-bg:#0D1417;
- } }
- :root[data-theme="dark"] {
-   --paper:#101416; --surface:#171C1F; --ink:#ECEFEA; --muted:#9AA6A4;
-   --teal:#6ECEB2; --teal-ink:#8DDCC2;
-   --bad:#E5766D; --bad-bg:#33201E; --good:#6FBF8F; --good-bg:#1C2B22;
-   --hilite:#DCA17F; --hilite-bg:#30251F;
-   --rule:#ECEFEA; --hairline:#2E3538; --code-bg:#0D1417;
- }
- :root[data-theme="light"] {
-   --paper:#F7FAF8; --surface:#FFFFFF; --ink:#101413; --muted:#53615B;
-   --teal:#6ECEB2; --teal-ink:#17614D;
-   --bad:#B3261E; --bad-bg:#F9E9E7; --good:#2C6E49; --good-bg:#E9F2EC;
-   --hilite:#C07D59; --hilite-bg:#F5EAE3;
-   --rule:#101413; --hairline:#D6E0DA; --code-bg:#EFF4F1;
- }
 
- * { box-sizing:border-box; }
- body { margin:0; background:var(--paper); color:var(--ink);
-        font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; font-size:16px; line-height:1.55; }
-
- /* the three voices */
- .label-voice { font-family:"Arial Narrow","Helvetica Neue Condensed","Helvetica Neue",Arial,sans-serif;
-                font-weight:900; text-transform:uppercase; letter-spacing:.02em; }
- .say  { font-family:Georgia,"Times New Roman",serif; font-style:italic; }
- .does { font-family:"SF Mono",Menlo,Consolas,monospace; }
-
- /* ============ nav ============ */
- nav { display:flex; align-items:center; gap:22px; padding:14px 26px; background:var(--paper);
-       border-bottom:3px solid var(--rule); position:sticky; top:0; z-index:9; flex-wrap:wrap; }
- nav .brand { font-size:20px; margin-right:auto; cursor:pointer; }
- nav a { color:var(--ink); text-decoration:none; font-size:14px; cursor:pointer;
-         border-bottom:2px solid transparent; padding-bottom:2px; }
- nav a:hover { border-bottom-color:var(--teal); }
- nav .cta { background:var(--ink); color:var(--paper); padding:9px 18px; font-weight:700;
-            border-bottom:none; }
- nav .cta:hover { background:var(--teal); color:#101413; }
- nav .ghost { border:2px solid var(--ink); padding:7px 18px; font-weight:700; border-bottom:2px solid var(--ink); }
- nav .ghost:hover { border-color:var(--teal); color:var(--teal); }
- .wrap { max-width:900px; margin:0 auto; padding:0 24px; }
-
- /* ============ hero ============ */
- .hero { padding:64px 0 56px; }
- .hero h1 { font-size:clamp(34px,6vw,58px); line-height:1.08; margin:0 0 22px; max-width:16ch;
-            text-wrap:balance; font-weight:900; letter-spacing:-.015em; }
- .hero h1 .say  { background:linear-gradient(transparent 55%, var(--hilite) 55%); font-weight:400; }
- .hero h1 .does { font-size:.82em; color:var(--teal); }
- .hero p { max-width:56ch; color:var(--muted); margin:0 0 30px; font-size:17.5px; }
- .btn { display:inline-block; background:var(--ink); color:var(--paper); border:0; cursor:pointer;
-        font-weight:800; font-size:16px; padding:15px 30px; }
- .btn:hover { background:var(--teal); color:#101413; }
- .btn:focus-visible, a:focus-visible, input:focus-visible { outline:3px solid var(--teal); outline-offset:2px; }
- .hero .fine { font-size:12.5px; color:var(--muted); margin-top:12px; }
-
- /* signature: the x-ray reveal */
- .xray { margin:44px 0 0; border:2.5px solid var(--rule); background:var(--surface); }
- .xray .head { display:flex; justify-content:space-between; align-items:baseline;
-               border-bottom:2.5px solid var(--rule); padding:10px 16px; font-size:13px; }
- .xray .head .label-voice { font-size:15px; }
- .pane { padding:22px; }
- .pane.saying { font-size:19px; line-height:1.5; }
- .pane.saying .kw { background:var(--hilite-bg); padding:0 3px; }
- .pane.saying .vlabel { display:block; font-size:11px; font-weight:800; letter-spacing:.07em;
-                        text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
- .pane.truth { background:var(--film); color:var(--film-ink); border-top:2.5px solid var(--rule); }
- .pane.truth .vlabel { display:block; font-size:11px; font-weight:800; letter-spacing:.07em;
-                       text-transform:uppercase; color:var(--teal); margin-bottom:8px; }
- .pane.truth .row { padding:3px 0; font-size:13.5px; }
- .pane.truth .row .does { color:#9fdc9f; }
- .pane.truth .verdict { color:#ff9b90; font-weight:700; }
-
- /* ============ label sections ============ */
- section { padding:58px 0 8px; }
- .bar { border-top:9px solid var(--rule); padding-top:10px; display:flex; justify-content:space-between;
-        align-items:baseline; gap:12px; flex-wrap:wrap; }
- .bar h2 { margin:0; font-size:26px; }
- .bar .n { font-size:13px; color:var(--muted); }
- .lead { color:var(--muted); max-width:66ch; margin:12px 0 30px; }
-
- /* specimens (problem) */
- .spec { border-top:1px solid var(--hairline); padding:20px 0; display:grid;
-         grid-template-columns:1fr 1fr; gap:22px; }
- .spec:last-of-type { border-bottom:1px solid var(--hairline); }
- .spec .who { font-size:13px; color:var(--muted); margin-bottom:6px; }
- .spec .say { font-size:16.5px; }
- .spec .found { font-size:13.5px; }
- .spec .found .tag { display:inline-block; font-size:11px; font-weight:800; letter-spacing:.06em;
-                     text-transform:uppercase; padding:2px 8px; margin-bottom:8px; }
- .spec .found.bad .tag { background:var(--bad-bg); color:var(--bad); }
- .spec .found.warn .tag { background:var(--hilite-bg); color:var(--ink); }
- .spec .found .does { display:block; background:var(--code-bg); padding:6px 10px; margin-top:8px;
-                      font-size:12px; overflow-x:auto; }
-
- /* pipeline as a label table */
- .facts { border:2.5px solid var(--rule); background:var(--surface); margin-top:6px; }
- .facts .fhead { padding:12px 16px 8px; border-bottom:8px solid var(--rule); }
- .facts .fhead .label-voice { font-size:24px; display:block; }
- .facts .fhead small { color:var(--muted); font-size:12.5px; }
- .frow { display:grid; grid-template-columns:34px 1fr auto; gap:14px; align-items:baseline;
-         padding:11px 16px; border-bottom:1px solid var(--hairline); }
- .frow:last-child { border-bottom:none; }
- .frow.hot { background:var(--hilite-bg); }
- .frow .idx { font-weight:900; font-size:15px; }
- .frow b { font-size:15px; } .frow span { color:var(--muted); font-size:13.5px; }
- .frow .src { font-size:11.5px; color:var(--teal-ink); text-align:right; white-space:nowrap; }
-
- .formula { margin:26px 0 0; padding:14px 16px; border-left:4px solid var(--teal);
-            background:var(--surface); font-size:15px; overflow-x:auto; }
- .formula .gloss { color:var(--muted); font-size:13px; font-style:italic; margin-top:6px; }
-
- /* results rows */
- .rrow { display:flex; justify-content:space-between; align-items:baseline; gap:16px;
-         border-top:1px solid var(--hairline); padding:14px 0; }
- .rrow:last-of-type { border-bottom:8px solid var(--rule); }
- .rrow .what { max-width:60ch; } .rrow .what b { font-size:16px; }
- .rrow .what div { color:var(--muted); font-size:13.5px; }
- .rrow .num { font-size:34px; font-weight:900; font-variant-numeric:tabular-nums; white-space:nowrap; }
- .rrow .num.good { color:var(--good); } .rrow .num.warn { color:var(--bad); }
- .caveat { font-size:12.5px; color:var(--muted); font-style:italic; margin:14px 0 0; max-width:70ch; }
-
- .connection-box { margin-top:24px; border-top:2px solid var(--rule); padding-top:22px; }
- .connection-box .bar { border-top:0; padding-top:0; margin-top:0; }
- .connection-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0; }
- .connection-grid label { display:flex; flex-direction:column; gap:7px; font-size:13px; font-weight:700; min-width:0; }
- .connection-grid input,.connection-grid select { width:100%; min-width:0; box-sizing:border-box; padding:12px; border:1.5px solid var(--ink); background:var(--paper); color:var(--ink); font:inherit; }
- .key-field { grid-column:1/-1; }
- .key-row { display:flex; gap:8px; }
- .key-row input { flex:1; }
- .quiet-button { background:var(--paper); color:var(--ink); border:1.5px solid var(--ink); padding:10px 14px; cursor:pointer; font:inherit; }
- .connection-note { color:var(--muted); font-size:13px; line-height:1.6; }
- .scan-actions { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:20px; flex-wrap:wrap; }
- #service-status { padding:10px 0; font-size:13px; color:var(--muted); }
- button:disabled { opacity:.5; cursor:not-allowed; }
- :focus-visible { outline:3px solid var(--teal); outline-offset:3px; }
- @media(max-width:560px){ .connection-grid { grid-template-columns:1fr; } .scanbox {padding:16px;} }
- /* ============ scanner ============ */
- #page-scanner { display:none; }
- .scanbox { border:2.5px solid var(--rule); background:var(--surface); padding:24px; margin-top:30px; }
- .row { display:flex; gap:10px; flex-wrap:wrap; }
- #url { flex:1; min-width:230px; padding:14px 15px; font-size:15px; border:1.5px solid var(--ink);
-        background:var(--paper); color:var(--ink); font-family:inherit; }
- .hint { color:var(--muted); font-size:13px; margin-top:10px; }
- .hint a { color:var(--teal-ink); cursor:pointer; text-decoration:underline; }
- .ordiv { display:flex; align-items:center; gap:14px; margin:18px 0; color:var(--muted);
-   font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:800; }
- .ordiv::before, .ordiv::after { content:""; flex:1; border-top:1.5px solid var(--hairline); }
- .dropzone { border:2px dashed var(--rule); padding:28px 18px; text-align:center; cursor:pointer; }
- .dropzone:hover { border-color:var(--teal); }
- .dropzone .dz1 { font-weight:800; font-size:15.5px; }
- .dropzone .dz2 { color:var(--muted); font-size:13px; margin-top:5px; }
- .dropzone.drag { border-color:var(--teal); background:var(--surface); }
- .dropzone.drag .dz1 { color:var(--teal); }
- .dropzone a { color:var(--teal-ink); cursor:pointer; text-decoration:underline; }
- .fchip { flex:1; display:flex; align-items:center; gap:10px; min-width:0;
-   border:2px solid var(--ink); background:var(--surface); padding:9px 12px; font-size:14.5px; }
- .fchip .fname { flex:1 1 auto; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
- .fchip .fmeta { flex:0 0 auto; color:var(--muted); font-size:13px; white-space:nowrap; }
- @media (max-width:560px){ .fchip .fmeta { display:none; } }  /* narrow: folder name wins */
- .fchip .fx { color:var(--muted); cursor:pointer; text-decoration:none; padding:0 4px; }
- .fchip .fx:hover { color:var(--ink); }
- .stagebox { border:2px solid var(--rule); background:var(--surface); padding:10px 14px; margin-top:14px; }
- .filelist { max-height:180px; overflow-y:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-   font-size:12.5px; }
- .filelist .frow { display:flex; justify-content:space-between; gap:12px; padding:3px 2px;
-   border-bottom:1px solid var(--rule); }
- .filelist .frow:last-child { border-bottom:none; }
- .filelist .frow.fskip { color:var(--muted); text-decoration:line-through; opacity:.65; }
- .filelist .fsize { color:var(--muted); white-space:nowrap; }
- .stagebox .swarn { margin-top:8px; font-size:13px; color:#a03; }
- #progress { display:none; margin-top:22px; }
- .steps { display:flex; gap:5px; margin-bottom:12px; }
- .step { flex:1; text-align:center; font-size:11.5px; color:var(--muted); padding:7px 2px;
-         border-top:4px solid var(--hairline); text-transform:uppercase; letter-spacing:.04em; }
- .step.on { color:var(--teal); border-top-color:var(--teal); font-weight:800; }
- .step.done { color:var(--good); border-top-color:var(--good); }
- .console { position:relative; }
- #log { background:var(--film); color:#9fdc9f; font-family:"SF Mono",Menlo,monospace; font-size:12.5px;
-        padding:14px; height:150px; overflow-y:auto; white-space:pre-wrap; }
- #stopbtn { position:absolute; top:8px; right:8px; font-family:"SF Mono",Menlo,monospace;
-        font-size:11.5px; color:#e8a0a0; background:transparent; border:1.5px solid #7a4a4a;
-        padding:3px 10px; cursor:pointer; letter-spacing:.05em; }
- #stopbtn:hover { color:#fff; border-color:#e8a0a0; background:rgba(232,160,160,.12); }
- #result { display:none; margin-top:24px; }
- .vhead { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;
-          padding-bottom:10px; border-bottom:8px solid var(--rule); }
- .vhead h3 { margin:0; font-size:22px; }
- .risk { background:var(--bad); color:#fff; font-weight:800; font-size:13px; letter-spacing:.05em;
-         padding:6px 14px; text-transform:uppercase; }
- .meta { color:var(--muted); font-size:13px; margin:8px 0; }
- .vclaim { padding:10px 14px; background:var(--hilite-bg); border-left:4px solid var(--hilite);
-           margin:14px 0; font-size:15px; }
- .vsum { padding:12px 14px; background:var(--bad-bg); border-left:4px solid var(--bad);
-         font-size:15px; margin:14px 0; }
- .chip { display:inline-block; border:1.5px solid var(--bad); color:var(--bad); font-size:12px;
-         font-weight:700; padding:2px 10px; margin:2px 6px 2px 0; }
- .evid { border-top:1px solid var(--hairline); padding:12px 0; }
- .evid b { font-size:14.5px; } .evid .loc { float:right; font-size:12px; color:var(--muted); }
- .evid .does { display:block; background:var(--code-bg); padding:6px 10px; margin-top:7px;
-               font-size:12px; overflow-x:auto; }
- .advice { background:var(--good-bg); border-left:4px solid var(--good); padding:12px 14px;
-           font-size:14px; margin-top:16px; }
-
- footer { margin-top:70px; border-top:3px solid var(--rule); padding:26px 24px 34px;
-          font-size:12.5px; color:var(--muted); text-align:center; line-height:1.7; }
-
- @media (max-width:720px) { .spec { grid-template-columns:1fr; gap:10px; }
-   .rrow .num { font-size:26px; } }
- @media (prefers-reduced-motion: reduce) { .scanline { box-shadow:none; } }
-
- /* Homepage: a clear entry point and a readable, source-reviewed example. */
- html { scroll-padding-top:110px; }
- .wrap { max-width:1080px; }
- nav .brand { text-decoration:none; }
- nav .brand span { color:var(--teal-ink); }
- nav .cta,.btn { background:var(--teal); color:#101413; text-decoration:none; }
- nav .cta:hover,.btn:hover { background:#8DDCC2; color:#101413; }
- nav .ghost:hover { color:var(--teal-ink); }
- :focus-visible { outline-color:var(--teal-ink); }
- .hero { padding:76px 0 56px; }
- .hero-layout { display:grid; grid-template-columns:1.25fr .75fr; gap:52px; align-items:center; }
- .eyebrow { display:block; color:var(--teal-ink); font-size:12px; letter-spacing:.12em; font-weight:800; text-transform:uppercase; margin-bottom:18px; }
- .hero h1 { max-width:17ch; font-size:clamp(38px,5.2vw,64px); letter-spacing:-.045em; }
- .hero h1 em { font-style:normal; color:var(--teal-ink); }
- .hero p { font-size:18px; }
- .hero-actions { display:flex; align-items:center; flex-wrap:wrap; gap:22px; }
- .text-link { color:var(--ink); font-weight:700; text-underline-offset:5px; }
- .hero .fine { margin:18px 0 0; font-size:13px; }
- .mini-label { border:2px solid var(--rule); background:var(--surface); padding:24px; box-shadow:10px 10px 0 var(--teal); }
- .mini-label h2 { font-size:30px; line-height:1; margin:0; padding-bottom:14px; border-bottom:8px solid var(--rule); }
- .mini-label p { font-size:13px; margin:12px 0; }
- .mini-label ul { list-style:none; padding:0; margin:0; }
- .mini-label li { padding:13px 0; border-top:1px solid var(--hairline); font-weight:700; display:flex; gap:12px; }
- .mini-label li span { color:var(--teal-ink); }
- .mini-label small { display:block; margin-top:12px; color:var(--muted); }
- .journey { padding:28px 0; border-block:1px solid var(--hairline); }
- .journey ol { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; padding:0; margin:0; list-style:none; }
- .journey li { display:flex; gap:14px; }
- .journey .number { flex:none; width:30px; height:30px; display:grid; place-items:center; border:1px solid var(--hairline); font-weight:800; border-radius:50%; }
- .journey b { font-size:15px; }
- .journey p { margin:5px 0 0; color:var(--muted); font-size:13px; }
- #example { padding-top:60px; }
- .example-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
- .example-heading h2 { font-size:32px; margin:0; letter-spacing:-.025em; }
- .example-heading .eyebrow { margin-bottom:6px; }
- .sample-tag { font-size:12px; color:var(--teal-ink); background:var(--good-bg); padding:7px 12px; font-weight:700; }
- .technical-name { overflow-wrap:anywhere; font-family:monospace; font-size:12px; color:var(--muted); margin:8px 0 22px; }
- .example-grid { display:grid; grid-template-columns:1fr 1.15fr; border:2px solid var(--rule); background:var(--surface); }
- .example-context { padding:26px; border-right:1px solid var(--hairline); }
- .example-context h3 { margin:0 0 10px; font-size:13px; text-transform:uppercase; letter-spacing:.04em; }
- .example-context p { font-size:15px; margin:0 0 24px; }
- .example-context p:last-child { margin:0; }
- .example-report { padding:26px; }
- .example-report h3 { font-size:30px; line-height:1; margin:0 0 16px; border-bottom:8px solid var(--rule); padding-bottom:12px; }
- .report-scope { font-size:12px; color:var(--muted); margin:0 0 14px; }
- .report-line { padding:12px 0; border-top:1px solid var(--hairline); }
- .report-line b { display:block; font-size:13px; }
- .report-line p { margin:4px 0 0; font-size:15px; }
- .report-line.attention { padding:14px; background:var(--hilite-bg); border-left:3px solid var(--hilite); }
- details { border-top:1px solid var(--hairline); margin-top:20px; padding-top:16px; }
- summary { cursor:pointer; font-weight:700; }
- details p { color:var(--muted); font-size:14px; }
- .evidence-code { overflow-x:auto; background:var(--code-bg); padding:16px; font-size:12px; line-height:1.8; }
- .evidence-note { font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
- .example-limit { font-size:13px; color:var(--muted); margin:18px 0 0; max-width:85ch; }
- .closing { display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-top:44px; padding:28px 0; border-block:1px solid var(--hairline); }
- .closing h2 { margin:0 0 5px; font-size:25px; }
- .closing p { margin:0; color:var(--muted); font-size:14px; }
- #research { padding-top:44px; }
- #research>div>details { margin:0; }
- #research h3 { margin-top:30px; }
- .step.on { color:var(--teal-ink); }
- @media(max-width:760px) {
-  .hero-layout { grid-template-columns:1fr; gap:32px; }
-  .hero { padding:40px 0; }
-  .mini-label { max-width:480px; }
-  .example-grid { grid-template-columns:1fr; }
-  .example-context { border-right:0; border-bottom:1px solid var(--hairline); }
-  .journey ol { grid-template-columns:1fr; gap:22px; }
-  nav { gap:12px; padding:12px 18px; }
-  nav .ghost { display:none; }
-  .frow { grid-template-columns:24px 1fr; }
-  .frow .src { grid-column:2; text-align:left; white-space:normal; }
- }
-
-
- #page-reports { display:none; }
- .report-intro { padding-top:44px; }
- .report-intro h1 { font-size:clamp(30px,5vw,46px); letter-spacing:-.03em; margin:0 0 12px; }
- .report-toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin:26px 0 18px; }
- .report-toolbar select { font:inherit; color:var(--ink); background:var(--surface); border:1px solid var(--hairline); padding:9px; }
- .threat-list { list-style:none; padding:0; margin:0; border-top:4px solid var(--rule); }
- .threat-item { padding:22px 0; border-bottom:1px solid var(--hairline); }
- .threat-top { display:flex; align-items:baseline; justify-content:space-between; gap:16px; }
- .threat-top h3 { font-size:18px; margin:0; }
- .threat-item p { color:var(--muted); margin:8px 0 0; max-width:78ch; }
- .severity { display:inline-block; flex:none; font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:800; padding:4px 10px; border:1px solid currentColor; }
- .severity-critical,.severity-high { color:var(--bad); background:var(--bad-bg); }
- .severity-medium { color:var(--ink); background:var(--hilite-bg); }
- .severity-low { color:var(--teal-ink); background:var(--good-bg); }
- .severity-unrated { color:var(--muted); }
- .severity-guide { display:flex; flex-wrap:wrap; gap:12px 22px; font-size:13px; color:var(--muted); padding:14px 0; }
- .report-evidence { white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; }
- nav a[aria-current="page"] { text-decoration:underline; text-underline-offset:5px; }
- @media(max-width:480px){ nav .brand { width:100%; } nav .cta { margin-left:auto; } .threat-top { align-items:flex-start; } }
-
- .run-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; padding:24px 0; border-block:2px solid var(--rule); }
- .run-stat strong { display:block; font-size:38px; line-height:1.3; color:var(--teal-ink); }
- .run-stat span { color:var(--muted); font-size:13px; }
- .harm-ranking { list-style:decimal-leading-zero; padding-left:34px; }
- .harm-rank { padding:13px 0 13px 8px; border-bottom:1px solid var(--hairline); }
- .harm-rank span { display:block; color:var(--muted); font-size:13px; }
- .report-toolbar label { display:flex; flex-direction:column; gap:7px; font-size:13px; flex:1; min-width:180px; }
- .report-toolbar input { padding:10px; font:inherit; background:var(--surface); color:var(--ink); border:1px solid var(--hairline); min-width:0; width:100%; }
- .skill-report { margin:0; padding:0; border:0; }
- .skill-name { font-size:18px; overflow-wrap:anywhere; }
- .report-count { display:block; margin-top:5px; font-size:13px; color:var(--muted); font-weight:400; }
- .review-note { background:var(--hilite-bg); border-left:3px solid var(--hilite); padding:14px; }
- .review-badge { display:inline-block; font-size:12px; margin-top:10px; color:var(--muted); }
- .recorded-finding { padding:20px; margin-top:18px; border:1px solid var(--hairline); background:var(--surface); }
- .recorded-finding .threat-top { flex-wrap:wrap; }
- .recorded-finding .report-evidence { padding:14px; background:var(--code-bg); }
- @media(max-width:640px){ .run-stats { grid-template-columns:1fr 1fr; } .recorded-finding { padding:14px; } }
-
- .harms-tagline { font-size:clamp(20px,3vw,28px); margin:14px 0 30px; color:var(--teal-ink); letter-spacing:-.02em; }
- .featured-heading { font-size:18px; margin-bottom:6px; }
- #featured-report-list { border-top:2px solid var(--rule); }
- .browse-more { margin-top:30px; border:2px solid var(--hairline); padding:22px; }
- .browse-more>summary { font-size:19px; }
- .harm-explainer { padding:20px; background:var(--good-bg); border-left:4px solid var(--teal); margin:18px 0; }
- .harm-explainer h3 { margin:0 0 8px; font-size:19px; }
- .harm-explainer p { margin:0; font-size:15px; max-width:75ch; }
- .harm-explainer a { display:inline-block; font-size:12px; margin-top:12px; }
- .harm-explainer a[hidden] { display:none; }
- @media(max-width:480px){ .browse-more { padding:14px; } }
-
- .harm-explorer { display:grid; grid-template-columns:1fr 1fr; gap:28px; align-items:start; }
- .harm-explorer .harm-ranking { margin:0; padding-left:30px; }
- .harm-explorer .harm-rank { padding:0; }
- .harm-category-button { display:block; width:100%; text-align:left; font:inherit; color:var(--ink); border:0; background:transparent; padding:13px 12px; cursor:pointer; }
- .harm-category-button[aria-pressed="true"] { background:var(--good-bg); box-shadow:inset 3px 0 var(--teal-ink); }
- .harm-category-button:hover { background:var(--good-bg); }
- .harm-explorer .harm-explainer { margin:0; position:sticky; top:130px; min-height:220px; }
- @media(max-width:700px){ .harm-explorer { grid-template-columns:1fr; gap:18px; } .harm-explorer .harm-explainer { grid-row:1; position:static; min-height:0; } }
-</style>
-
-<nav aria-label="Main navigation">
- <a class="brand label-voice" href="#home" onclick="go('home')">Skill<span>Xray</span></a>
- <a class="report-nav label-voice" href="#reports" onclick="go('reports')">Threat reports</a>
- <a class="ghost label-voice" href="#research" onclick="go('home','research')">Research</a>
- <a class="cta label-voice" href="#scanner" onclick="go('scanner')">Scan a skill</a>
+<nav>
+  <a class="brand" href="#">Skill<b>Xray</b></a>
+  <a class="lnk hide-sm" href="#found">What we found</a>
+  <a class="lnk hide-sm" href="#try">Try one</a>
+  <a class="btn" href="#scan">Scan a skill</a>
 </nav>
 
-<main id="page-home">
- <div class="hero"><div class="wrap hero-layout">
-  <div>
-   <span class="eyebrow">Privacy facts for AI skills</span>
-   <h1>Skills <span class="say">say</span> one thing.<br>Their <span class="does">code</span> does another.</h1>
-   <p>Before you install a skill, see what its code does with your data. SkillXRay reveals privacy risks in how a skill handles your data.</p>
-   <div class="hero-actions"><a class="btn label-voice" href="#scanner" onclick="go('scanner')">Scan a skill</a><a class="text-link" href="#example">Explore an example ↗</a></div>
-  </div>
-  <aside class="mini-label" aria-label="What your report helps you understand">
-   <h2 class="label-voice">Privacy Facts</h2>
-   <p>A clearer picture before you install.</p>
-   <ul><li><span aria-hidden="true">01</span> What data it reads</li><li><span aria-hidden="true">02</span> Where that data goes</li><li><span aria-hidden="true">03</span> What deserves a closer look</li></ul>
-  </aside>
- </div></div>
-
- <div class="journey"><div class="wrap"><ol aria-label="How to scan a skill">
-  <li><span class="number" aria-hidden="true">1</span><div><b>Add a skill</b><p>Paste a link or upload its folder.</p></div></li>
-  <li><span class="number" aria-hidden="true">2</span><div><b>Choose your provider</b><p>Use your API key or an available LiteLLM gateway. Provider charges apply.</p></div></li>
-  <li><span class="number" aria-hidden="true">3</span><div><b>Review findings</b><p>Read the report and inspect the supporting code.</p></div></li>
- </ol></div></div>
-
- <section id="example" aria-labelledby="example-title"><div class="wrap">
-  <div class="example-heading"><div><span class="eyebrow">Example analysis</span><h2 id="example-title">A session summarizer</h2></div><span class="sample-tag">Explore without an API key</span></div>
-  <p class="technical-name">coaching-session-summarizer · glebis / claude-skills</p>
-  <div class="example-grid">
-   <div class="example-context">
-    <h3>What it promises</h3><p>Turn coaching or therapy transcripts into insights, decisions, and action items.</p>
-    <h3>Two ways to run it</h3><p>The default workflow asks the active agent to analyze the transcript in-session. The documentation also describes a legacy script for running without an interactive agent.</p>
-    <h3>What the source review found</h3><p><strong>That optional script sends the transcript to Anthropic’s API when run.</strong> Sensitive session content would leave the machine through this API call.</p>
-   </div>
-   <div class="example-report">
-    <h3 class="label-voice">Privacy Facts</h3><p class="report-scope">Source-reviewed example · optional API fallback</p>
-    <div class="report-line"><b>Data involved</b><p>Full coaching or therapy transcript</p></div>
-    <div class="report-line"><b>Sent to</b><p>Anthropic, for summarization</p></div>
-    <div class="report-line"><b>When it happens</b><p>When the legacy summarization script makes its API request</p></div>
-    <div class="report-line attention"><b>Before using this path</b><p>Check that sending session content to this provider is appropriate for the people in the transcript.</p></div>
-   </div>
-  </div>
-  <details><summary>View supporting code</summary>
-   <p>The transcript is inserted into the prompt, then passed to the Anthropic client. This excerpt is shortened; the ellipsis marks omitted prompt instructions.</p>
-   <p class="evidence-note">scripts/summarize_session.py · lines 92–114</p>
-   <pre class="evidence-code"><code>prompt = f"""Analyze this coaching session transcript and extract:
-…
-Transcript:
-{transcript}"""
-
-message = client.messages.create(
-    model=MODEL,
-    max_tokens=2000,
-    system=system_prompt,
-    messages=[{"role": "user", "content": prompt}]
-)</code></pre>
-   <p><strong>Documentation context:</strong> SKILL.md → Resources identifies this script as the legacy / headless fallback and describes its direct Anthropic API call. The environment key authenticates that request; reading it is not, by itself, evidence of credential theft.</p>
-   <p class="evidence-note">Reviewed from the bundled corpus snapshot in backend commit 9883313. This is a curated source review, not a live scan or an unedited model-generated report.</p>
-  </details>
-  <p class="example-limit">Static analysis identifies possible behavior, not proof that a path ran. The default agent workflow is separate and is not a guarantee of local-only processing. Findings need context and may miss risks.</p>
-  <div class="closing"><div><h2>What about the skill you’re installing?</h2><p>Start with its files. Follow the evidence.</p></div><a class="btn label-voice" href="#scanner" onclick="go('scanner')">Scan your skill</a></div>
- </div></section>
-
- <section id="research"><div class="wrap"><details><summary>Research &amp; methodology</summary>
-  <p>SkillXray is a research prototype. Model-assisted analysis examines skill documentation and code for data handling and potential privacy harms. Reports support review; they are not a certification of safety.</p>
-  <div class="facts">
-   <div class="fhead"><span class="label-voice">Audit Facts</span>
-     <small>Static analysis · reads skill files without executing the skill</small></div>
-   <div class="frow"><span class="idx">1</span><div><b>Parse the skill</b><br><span>its promise (SKILL.md) and its code, split into sections</span></div><span class="src">marketplaces</span></div>
-   <div class="frow"><span class="idx">2</span><div><b>Identify data flows</b><br><span>read · save · send · infer · delete — pinned to file:line</span></div><span class="src">GDPR · NIST lifecycle</span></div>
-   <div class="frow hot"><span class="idx">3</span><div><b>Assess potential violations</b><br><span>each flow vs. what the promise ∧ social norms entitle</span></div><span class="src">Contextual Integrity</span></div>
-   <div class="frow"><span class="idx">4</span><div><b>Name the harm</b><br><span>Surveillance · Disclosure · Inference (our extension) · …</span></div><span class="src">Solove's taxonomy</span></div>
-   <div class="frow"><span class="idx">5</span><div><b>Print the Privacy Facts</b><br><span>a label anyone can read before installing</span></div><span class="src">nutrition labels</span></div>
-  </div>
-
-  <h3>Preliminary pilot results</h3>
-  <div class="rrow"><div class="what"><b>Precision</b><div>when it flags, humans agree</div></div>
-    <div class="num good">93%</div></div>
-  <div class="rrow"><div class="what"><b>Recall</b><div>it under-flags — in one known, tunable rule</div></div>
-    <div class="num warn">60%</div></div>
-  <div class="rrow"><div class="what"><b>Cost per audit</b><div>~4 minutes per skill</div></div>
-    <div class="num">~55k <span style="font-size:14px;font-weight:400">tokens</span></div></div>
-
-  <p class="caveat">Pilot numbers — held-out validation in progress.</p>
- </details></div></section>
-</main>
-
-<main id="page-reports"><div class="wrap">
- <section class="report-intro" aria-labelledby="reports-title">
-  <span class="eyebrow">Findings from our corpus · August 13, 2026</span>
-  <h1 id="reports-title">What our skill analysis found.</h1>
-  <div id="report-load" role="status" aria-live="polite">Loading the recorded findings…</div>
-  <div id="recorded-results" hidden>
-   <div class="run-stats" id="run-stats" aria-label="Run summary"></div>
-   <p class="connection-note">These are potential violations flagged by automated analysis, not confirmed incidents. This curated sample does not represent the whole marketplace. Multiple flags can describe the same behavior.</p>
-   <div class="bar" style="margin-top:36px"><h2 class="label-voice">Most common harm categories</h2></div>
-   <p class="connection-note">Ranked by number of analyzed skills with at least one flag in the category. A skill can appear in several categories.</p>
-   <p class="connection-note">Hover, focus, or tap a category to learn what it means.</p>
-   <div class="harm-explorer">
-   <ol id="harm-ranking" class="harm-ranking"></ol>
-   <aside id="harm-definition" class="harm-explainer" aria-live="polite" aria-atomic="true">
-    <h3 id="harm-meaning-title">What do these harms mean?</h3>
-    <p id="harm-meaning"></p>
-    <a id="harm-meaning-source" class="text-link" href="https://law.shu.edu/documents/taxonomy-privacy.pdf" target="_blank" rel="noopener noreferrer">About Solove’s taxonomy ↗</a>
-   </aside>
-   </div>
-   <div class="bar" style="margin-top:38px"><h2 class="label-voice">Privacy Harms</h2></div>
-   <p class="harms-tagline">Behind every data flow, a human consequence.</p>
-   <h3 class="featured-heading">Five skills to explore first</h3>
-   <p class="connection-note">Pinned from this run by total flagged harms. These five stay fixed while you browse the rest.</p>
-   <ul id="featured-report-list" class="threat-list" aria-label="Five featured skill reports"></ul>
-   <details class="browse-more"><summary>Browse the other 49 skills</summary>
-   <div class="report-toolbar">
-    <label for="report-search">Find a skill<input id="report-search" type="search" placeholder="Search skill names" autocomplete="off"></label>
-    <label for="harm-filter">Harm category<select id="harm-filter"><option value="all">All categories</option></select></label>
-    <label for="flag-filter">Findings<select id="flag-filter"><option value="all">All analyzed skills</option><option value="flagged">With potential violations</option><option value="clear">No potential violations flagged</option></select></label>
-   </div>
-   <p id="finding-count" class="connection-note" role="status" aria-live="polite"></p>
-   <ul id="recorded-report-list" class="threat-list" aria-label="Recorded skill reports"></ul>
-   </details>
-   <p class="connection-note">Snapshot from the documented corpus run. No API key or upload is needed to explore these results.</p>
-  </div>
- </section>
-</div></main>
-
-<div id="page-scanner"><div class="wrap">
- <section style="padding-top:42px">
-  <div class="bar"><h2 class="label-voice">Scan a skill</h2><span class="n"></span></div>
-  <p class="lead">Paste a marketplace or GitHub link. Most scans take 2–5 minutes.</p>
-
-  <div class="scanbox">
-   <div class="row">
-     <input id="url" placeholder="https://skillsmp.com/creators/…  or a GitHub folder link">
-     <span id="folderchip" class="fchip" style="display:none"></span>
-
-   </div>
-   <div id="ordiv" class="ordiv"><span>or</span></div>
-
-   <div id="dropzone" class="dropzone" onclick="document.getElementById('folderpick').click()">
-     <div class="dz1">Drag &amp; drop a skill folder</div>
-     <div class="dz2">or <a>click to browse</a> · the folder with SKILL.md and its scripts</div>
-   </div>
-   <input id="folderpick" type="file" webkitdirectory multiple style="display:none">
-   <div id="stagebox" class="stagebox" style="display:none"></div>
-   <div class="hint">Example URL: <a onclick="demo()">zoom (glebis)</a> · provider usage charges apply</div>
-   <div class="connection-box">
-    <div class="bar"><h3 class="label-voice">Analysis connection</h3></div>
-    <div id="service-status" role="status" aria-live="polite">Connecting to the scan service…</div>
-    <div class="connection-grid">
-     <label>Provider<select id="provider" onchange="providerChanged()"><option value="openai">OpenAI · use my key</option><option value="anthropic">Anthropic · use my key</option></select></label>
-     <label id="model-field">Model<input id="model" value="gpt-4o" spellcheck="false" autocomplete="off" aria-describedby="model-note"></label>
-     <label id="gateway-field" style="display:none">LiteLLM gateway<select id="gateway"></select></label>
-     <div class="key-field" id="key-field"><label for="api-key" style="margin-bottom:7px">API key</label><div class="key-row"><input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste your provider API key" aria-describedby="key-note"><button type="button" class="quiet-button" id="key-toggle" onclick="toggleKey()" aria-label="Show API key">Show</button></div></div>
+<header class="hero"><div class="wrap">
+  <div class="hero-copy">
+    <span class="eyebrow">◎ AI skill privacy scanner</span>
+    <h1>A skill says one thing.<br>Its code does <em>another</em>.</h1>
+    <p class="sub"><span class="hl">Before you install a skill</span>, see what its code actually does with your data. SkillXray flags the privacy risks a skill's description never mentions.</p>
+    <div class="hero-cta">
+      <a class="btn" href="#scan">Scan a skill →</a>
+      <a class="plain" href="#found">See what we found ↓</a>
     </div>
-    <p class="connection-note" id="model-note">Choose a model available to your account. Connection testing checks key and model access; a scan checks analysis compatibility.</p>
-    <p class="connection-note" id="key-note">Your key is sent securely to this scan service and encrypted while queued. The worker uses it for your scan, then discards it. Skill content is sent to your selected provider. Reports expire after 24 hours. Keep this tab open to access your scan.</p>
-    <div class="scan-actions"><div><button class="quiet-button" type="button" id="test-connection" onclick="testConnection()" disabled>Test connection</button><span id="connection-status" role="status" aria-live="polite"></span></div><button id="scan-button" class="btn label-voice" onclick="scanNow()" disabled>Start analysis</button></div>
-   </div>
-
-   <div id="progress">
-     <div class="steps">
-       <div class="step" id="s0">fetch</div><div class="step" id="s1">parse</div>
-       <div class="step" id="s2">moves</div><div class="step" id="s3">judge</div>
-       <div class="step" id="s4">harms</div><div class="step" id="s5">label</div>
-     </div>
-     <div class="console">
-       <div id="log"></div>
-       <button id="stopbtn" onclick="cancelScan()" style="display:none">✕ STOP</button>
-     </div>
-   </div>
-
-   <div id="result"></div>
   </div>
- </section>
-</div></div>
+
+  <div class="stats">
+    <div class="stat"><b>100</b><span>skills we read the code of</span></div>
+    <div class="stat"><b>54</b><span>of them handle personal data</span></div>
+    <div class="stat flag"><b>72%</b><span>of those did something their description never mentioned</span></div>
+  </div>
+</div></header>
+
+<section id="found" class="band"><div class="wrap">
+  <div class="sec-head">
+    <p class="kicker">The pattern</p>
+    <h2>What these skills do with your data</h2>
+    <p>None of these are malware. This is what ordinary, useful skills quietly do once you install them. The rows below count the 54 skills that handle personal data. One skill can show up in more than one row.</p>
+  </div>
+
+  <div class="chart" role="img" aria-label="Privacy issues by category across the 54 skills that handle personal data">
+    <div class="crow" title="Uses data you shared for one purpose to do something else.">
+      <div class="rlabel"><span class="name">Uses your data for something else<small>Secondary Use</small></span><span class="cnt">22</span></div>
+      <div class="track"><div class="fill" style="width:100%;background:var(--c1)"></div></div>
+    </div>
+    <div class="crow" title="Passes on things other people told you, like meeting guests or message contacts.">
+      <div class="rlabel"><span class="name">Passes on what others confided<small>Breach of Confidentiality</small></span><span class="cnt">17</span></div>
+      <div class="track"><div class="fill" style="width:77%;background:var(--c2)"></div></div>
+    </div>
+    <div class="crow" title="Reaches or keeps more than its description admits.">
+      <div class="rlabel"><span class="name">Does more than it tells you<small>Exclusion</small></span><span class="cnt">14</span></div>
+      <div class="track"><div class="fill" style="width:64%;background:var(--c3)"></div></div>
+    </div>
+    <div class="crow" title="Puts private data somewhere others can reach it more easily.">
+      <div class="rlabel"><span class="name">Makes private data easier to reach<small>Increased Accessibility</small></span><span class="cnt">13</span></div>
+      <div class="track"><div class="fill" style="width:59%;background:var(--c4)"></div></div>
+    </div>
+    <div class="crow" title="Figures out a new, sensitive fact you never provided, like mood or health.">
+      <div class="rlabel"><span class="name">Figures out new things about you<small>Inference</small></span><span class="cnt">9</span></div>
+      <div class="track"><div class="fill" style="width:41%;background:var(--c5)"></div></div>
+    </div>
+    <div class="crow" title="Watches or records more of your activity than the task needs.">
+      <div class="rlabel"><span class="name">Watches more than it needs to<small>Surveillance</small></span><span class="cnt">5</span></div>
+      <div class="track"><div class="fill" style="width:23%;background:var(--c6)"></div></div>
+    </div>
+    <div class="crow" title="Combines scattered pieces of your data into a fuller profile.">
+      <div class="rlabel"><span class="name">Builds a profile from scattered pieces<small>Aggregation</small></span><span class="cnt">2</span></div>
+      <div class="track"><div class="fill" style="width:9%;background:var(--c7)"></div></div>
+    </div>
+    <div class="crow" title="Sends your private information out to somewhere it did not say.">
+      <div class="rlabel"><span class="name">Sends your private info out<small>Disclosure</small></span><span class="cnt">1</span></div>
+      <div class="track"><div class="fill" style="width:5%;background:var(--c8)"></div></div>
+    </div>
+  </div>
+  <p class="chart-note">Counts are skills with at least one finding in that category, from 2,336 data moves we traced to the exact line. Hover a row to see what it means.</p>
+</div></section>
+
+<section id="try"><div class="wrap">
+  <div class="sec-head"><p class="kicker">See it live</p><h2>See it on a real skill</h2>
+    <p>These are real, popular skills we read the code of. Pick one on the left to see its Privacy Card, the same card you get when you scan your own.</p></div>
+
+  <div class="mdx">
+    <div class="md-list" id="tryGrid" role="tablist" aria-label="Example skills"></div>
+    <div class="md-detail"><div class="card" id="cardMount"></div></div>
+  </div>
+</div></section>
+
+<section id="scan" class="band"><div class="wrap">
+  <div class="sec-head"><p class="kicker">Your turn</p><h2>Now check your own</h2>
+    <p>Paste a link or drop a folder, then choose how it runs. The free option runs a small model right in your browser, with no key, and nothing leaves your computer.</p></div>
+
+  <div class="scan">
+    <div class="field">
+      <input type="text" id="scanUrl" placeholder="Paste a link, or try apple-health, zoom, chrome-history…">
+      <a class="btn" id="scanBtn" href="#" onclick="return false">Scan skill</a>
+    </div>
+    <div class="or"><span>or</span></div>
+    <div class="drop"><b>Drag &amp; drop a skill folder</b><span>the folder with SKILL.md and its scripts, or click to browse</span></div>
+    <div class="modes">
+      <p class="modes-lab">How should it run?</p>
+      <div class="mode-opts" id="modeOpts">
+        <button class="mode sel" data-mode="browser" type="button">
+          <div class="mt">In your browser <span class="tag">Free</span></div>
+          <div class="md">A small open model runs right here in your tab. No key, and nothing leaves your computer.</div>
+          <div class="meta">Lighter model, so it can miss things a bigger model catches</div>
+        </button>
+        <button class="mode" data-mode="key" type="button">
+          <div class="mt">Your API key</div>
+          <div class="md">Runs on OpenAI or Anthropic for the most accurate result. The skill’s code and your key go to that vendor for this one scan.</div>
+          <div class="meta">Full quality</div>
+        </button>
+        <button class="mode" data-mode="local" type="button">
+          <div class="mt">On your machine</div>
+          <div class="md">Run one command on your own computer. Your key and the skill’s code never leave it.</div>
+          <div class="meta">Full quality · Nothing leaves</div>
+        </button>
+      </div>
+
+      <div class="mode-detail">
+        <div class="mode-panel on" data-for="browser">
+          <div class="keyrow">
+            <label for="bmodel">Model</label>
+            <select id="bmodel">
+              <option value="Llama-3.2-3B-Instruct|q4f16" selected>Llama 3.2 3B</option>
+              <option value="Qwen2.5-3B-Instruct|q4f16">Qwen2.5 3B</option>
+              <option value="Phi-3.5-mini-instruct|q4f16">Phi-3.5 mini</option>
+              <option value="Llama-3.2-1B-Instruct|q4f16">Llama 3.2 1B (fastest)</option>
+            </select>
+          </div>
+          <p class="scan-hint">The model downloads once (1 to 2&nbsp;GB, depending on your pick) and is cached, so later scans are quick. Needs a browser with WebGPU, such as Chrome or Edge. The skill’s files never leave your computer.</p>
+        </div>
+        <div class="mode-panel" data-for="key">
+          <div class="keyrow">
+            <label for="provider">Provider</label>
+            <select id="provider"><option>OpenAI</option><option>Anthropic</option></select>
+            <input type="password" id="apiKey" placeholder="Paste your API key (sk-…)" autocomplete="off" spellcheck="false">
+          </div>
+          <p class="scan-hint">The key travels over an encrypted connection, is used for this one scan, and is never saved. Because the scan runs on the vendor’s model, the skill’s code is sent there too. Want nothing to leave your computer? Use the browser model, or run it on your machine.</p>
+        </div>
+        <div class="mode-panel" data-for="local">
+          <p class="scan-hint">No key to paste here. You set that up on your own machine, in a <span style="font-family:'JetBrains Mono',monospace;font-size:13px">.env</span> file that stays there. <a href="#local">See the commands ↓</a></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress" id="prog" hidden>
+      <div class="phead"><span class="live"></span> Scanning <span class="nm" id="progName">—</span></div>
+      <div class="pnote" id="pnote" hidden></div>
+      <ul class="steps" id="steps">
+        <li data-sub=""><span class="ic"></span><div><div class="txt">Reading the skill</div><div class="sub"></div></div></li>
+        <li data-sub=""><span class="ic"></span><div><div class="txt">Finding where it touches your data</div><div class="sub"></div></div></li>
+        <li data-sub=""><span class="ic"></span><div><div class="txt">Checking each against what the skill promises</div><div class="sub"></div></div></li>
+        <li data-sub=""><span class="ic"></span><div><div class="txt">Labeling what goes further than expected</div><div class="sub"></div></div></li>
+        <li data-sub=""><span class="ic"></span><div><div class="txt">Writing your Privacy Card</div><div class="sub"></div></div></li>
+      </ul>
+      <div class="pfoot" id="pfoot"><span class="ok" id="pok">✓ Done.</span><a class="btn" id="openCard" href="#try">Open the Privacy Card →</a></div>
+    </div>
+  </div>
+
+  <div class="local" id="local">
+    <p class="lead"><b>Prefer to run it on your own machine?</b> Point it at any skill folder. Nothing leaves your computer except the model call you set up.</p>
+    <div class="term">
+      <div class="bar"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i><span class="t">bash · SkillXray</span><button class="copy" type="button" aria-label="Copy the commands">Copy</button></div>
+<pre><span class="c"># 1 · get the code</span>
+<span class="p">$</span> git clone https://github.com/keerthi166/SkillAppropriateness
+<span class="p">$</span> cd SkillAppropriateness
+
+<span class="c"># 2 · set up once</span>
+<span class="p">$</span> python3.13 -m venv .venv
+<span class="p">$</span> .venv/bin/pip install -r requirements.txt
+
+<span class="c"># 3 · scan a skill folder, and watch all 5 steps in your terminal</span>
+<span class="p">$</span> .venv/bin/python skillxray.py <span class="g">./path/to/your-skill</span> --provider anthropic</pre>
+    </div>
+  </div>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <div class="how">
+    <div class="sec-head"><p class="kicker">The method</p><h2>How it works</h2>
+      <p>SkillXray reads a skill's code. It never runs the skill.</p></div>
+    <ol>
+      <li><div class="num">1</div><b>Add a skill</b><p>Paste a marketplace or GitHub link, or drop the skill's folder.</p></li>
+      <li><div class="num">2</div><b>We read the code</b><p>Every place it reads, saves, sends, or figures out your data, pinned to the line.</p></li>
+      <li><div class="num">3</div><b>Get your Privacy Card</b><p>Plain facts and the evidence, so you can decide before you install.</p></li>
+    </ol>
+  </div>
+</div></section>
 
 <footer>
- SkillXray — research prototype · IBM Research<br>
- Static analysis
+  <div class="foot">
+    <div class="foot-brand">Skill<b>Xray</b></div>
+    <p>A research prototype from IBM Research. It reads skills without running them, so findings need your judgment and may miss things.</p>
+  </div>
 </footer>
 
 <script>
-function go(page, anchor){
-  document.getElementById('page-reports').style.display = page==='reports' ? 'block' : 'none';
-  document.querySelectorAll('nav a').forEach(function(link){
-    if(link.hash==='#'+page){ link.setAttribute('aria-current','page'); } else { link.removeAttribute('aria-current'); }
-  });
-  document.getElementById('page-home').style.display = page==='home' ? '' : 'none';
-  document.getElementById('page-scanner').style.display = page==='scanner' ? 'block' : 'none';
-  if(anchor==='research'){ document.querySelector('#research details').open=true; }
-  if(anchor){ document.getElementById(anchor)?.scrollIntoView(); }
-  else { window.scrollTo(0,0); }
-}
-function route(){
-  var anchor=location.hash.slice(1);
-  go(['scanner','reports'].includes(anchor) ? anchor : 'home', ['example','research'].includes(anchor) ? anchor : null);
-}
-window.addEventListener('hashchange',route);
-route();
-
-/* Recorded findings: display the allowlisted snapshot as text, never HTML. */
-function reportText(tag,value,className){
- const node=document.createElement(tag); node.textContent=value;
- if(className) node.className=className;
- return node;
-}
-// Frozen selection from the August 13 snapshot, ranked by flagged move count.
-const featuredSkills=['telegram-telethon','xlsx','daydream','thinking-patterns','telegram'];
-const harmMeanings={
- 'Secondary Use':'Personal data is repurposed beyond the reason it was collected. That change can undermine a person’s choices about how their information is used.',
- 'Breach of Confidentiality':'Information entrusted to someone is shared contrary to a confidentiality commitment. The harm involves breaking that trust, not simply moving data.',
- 'Exclusion':'People are denied awareness of, or participation in, how their personal information is handled. They cannot meaningfully review or influence its use.',
- 'Increased Accessibility':'Personal information becomes easier for others to find or obtain. Even previously available information can create new exposure when access expands.',
- 'Inference':'Existing information is used to derive new conclusions about a person, such as their health or relationships. SkillXray adds this category to capture sensitive deductions, even when the underlying data stays local.',
- 'Surveillance':'Someone’s behavior is observed or recorded. This scrutiny can diminish privacy in everyday activities.',
- 'Aggregation':'Separate pieces of personal information are brought together. The combined picture can reveal more than any individual piece.',
- 'Disclosure':'Personal facts are revealed to others. That revelation can affect the person’s reputation or security.'
+/* Real corpus data (from findings-data.json — the same records the site serves).
+   Each skill carries its own card so every chip opens its own findings. */
+var HARM = {
+  'Secondary Use':            {plain:'Uses your data for something else',   dot:'var(--c1)'},
+  'Breach of Confidentiality':{plain:'Passes on what others confided',       dot:'var(--c2)'},
+  'Exclusion':                {plain:'Does more than it tells you',          dot:'var(--c3)'},
+  'Increased Accessibility':  {plain:'Makes private data easier to reach',   dot:'var(--c4)'},
+  'Inference':                {plain:'Figures out new things about you',     dot:'var(--c5)'},
+  'Surveillance':             {plain:'Watches more than it needs to',        dot:'var(--c6)'},
+  'Aggregation':              {plain:'Builds a profile from scattered pieces',dot:'var(--c7)'},
+  'Disclosure':               {plain:'Sends your private info out',          dot:'var(--c8)'}
 };
-function explainHarm(category){
- document.querySelectorAll('.harm-category-button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.harm===category)));
- document.getElementById('harm-meaning-title').textContent=category==='all'?'What do these harms mean?':category;
- document.getElementById('harm-meaning').textContent=harmMeanings[category]||'Choose a harm category to see its general meaning. The labels draw on Solove’s privacy taxonomy, with Inference added by SkillXray.';
- document.getElementById('harm-meaning-source').hidden=category==='Inference';
-}
-let recordedRun=null;
-function renderRecordedReports(){
- if(!recordedRun) return;
- const query=document.getElementById('report-search').value.trim().toLowerCase();
- const category=document.getElementById('harm-filter').value;
- const status=document.getElementById('flag-filter').value;
- const others=recordedRun.reports.filter(r=>!featuredSkills.includes(r.skill));
- const reports=others.filter(r=>r.skill.toLowerCase().includes(query) &&
-  (category==='all'||r.findings.some(f=>f.harm===category)) &&
-  (status==='all'||(status==='flagged'?r.findings.length>0:r.findings.length===0)));
- const list=document.getElementById('recorded-report-list');list.replaceChildren();
- document.getElementById('finding-count').textContent=reports.length+' of '+others.length+' other skills · most flags first';
- if(!reports.length) list.append(reportText('li','No skills match these filters.','threat-item'));
- appendReportRows(list,reports,category);
-}
-function appendReportRows(list,reports,category){
- reports.forEach(report=>{
-  const row=reportText('li','','threat-item'), details=document.createElement('details');details.className='skill-report';
-  const summary=document.createElement('summary');
-  summary.append(reportText('span',report.skill,'skill-name'),reportText('span',report.findings.length+' total potential '+(report.findings.length===1?'flag':'flags'),'report-count'));
-  details.append(summary);
-  row.append(details);
-  const meta=report.moves+' data moves · '+report.source+' · Severity: not assessed';
-  details.append(reportText('p',meta,'connection-note'));
-  report.notes.forEach(note=>details.append(reportText('p',note,'review-note')));
-  if(!report.findings.length) details.append(reportText('p','No potential violations were flagged in this run. This is not a certification of safety.'));
-  const findings=report.findings.filter(f=>category==='all'||f.harm===category);
-  if(category!=='all') details.append(reportText('p',findings.length+' flags in '+category,'connection-note'));
-  findings.forEach(f=>{
-   const item=reportText('div','','recorded-finding');
-   const heading=reportText('div','','threat-top');
-   heading.append(reportText('h3',f.harm),reportText('span','Severity: not assessed','severity severity-unrated'));
-   item.append(heading,reportText('p',f.kind+' · '+f.data,'connection-note'),reportText('p',f.reason));
-   const evidence=document.createElement('details');
-   evidence.append(reportText('summary','View recorded evidence'));
-   evidence.append(reportText('p',f.evidence.file+(f.evidence.lines.length?':'+f.evidence.lines.join(', '):''),'evidence-note'));
-   evidence.append(reportText('pre',f.evidence.snippet||'No snippet recorded.','report-evidence'));
-   evidence.append(reportText('p','Verdict confidence: '+f.confidence+' · Record: '+f.id,'evidence-note'));
-   item.append(evidence);details.append(item);
-  });
-  const tags=[...new Set(report.findings.map(f=>f.harm))];
-  row.append(reportText('p',tags.join(' · ')||'No potential violations flagged','connection-note'));
-  if(report.notes.length) row.append(reportText('span','Review context available','review-badge'));
-  list.append(row);
- });
-}
-async function loadRecordedRun(){
- try {
-  const response=await fetch('findings-data.json');
-  if(!response.ok) throw new Error('Unable to load recorded results.');
-  const data=await response.json();
-  if(data.schema_version!==1||!Array.isArray(data.reports)) throw new Error('Invalid results snapshot.');
-  recordedRun=data;
-  appendReportRows(document.getElementById('featured-report-list'),featuredSkills.map(name=>data.reports.find(r=>r.skill===name)).filter(Boolean),'all');
-  const stats=document.getElementById('run-stats');
-  [[data.summary.analyzed,'skills analyzed'],[data.summary.with_potential_violation,'skills with potential flags'],[data.summary.total_violations,'potential violations'],[data.summary.total_moves.toLocaleString(),'data moves reviewed']].forEach(([number,label])=>{
-   const stat=reportText('div','','run-stat');stat.append(reportText('strong',number),reportText('span',label));stats.append(stat);
-  });
-  const ranking=document.getElementById('harm-ranking');
-  data.categories.slice().sort((a,b)=>b.skills-a.skills||b.flags-a.flags).forEach(category=>{
-   const row=reportText('li','','harm-rank');
-   const button=reportText('button','','harm-category-button');
-   button.type='button';button.dataset.harm=category.name;
-   button.setAttribute('aria-pressed','false');button.setAttribute('aria-controls','harm-definition');
-   button.append(reportText('strong',category.name),reportText('span',category.skills+' / '+data.summary.analyzed+' skills · '+category.flags+' flags'));
-   button.addEventListener('pointerenter',event=>{if(event.pointerType!=='touch') explainHarm(category.name);});
-   button.addEventListener('focus',()=>explainHarm(category.name));
-   button.addEventListener('click',()=>explainHarm(category.name));
-   row.append(button);
-   ranking.append(row);
-   const option=reportText('option',category.name);option.value=category.name;document.getElementById('harm-filter').append(option);
-  });
-  explainHarm(data.categories.slice().sort((a,b)=>b.skills-a.skills||b.flags-a.flags)[0].name);
-  document.getElementById('recorded-results').hidden=false;
-  document.getElementById('report-load').textContent='';
-  renderRecordedReports();
- } catch(error){ document.getElementById('report-load').textContent='The recorded findings could not be loaded. Refresh to try again.'; }
-}
-document.getElementById('report-search').addEventListener('input',renderRecordedReports);
-document.getElementById('harm-filter').addEventListener('change',renderRecordedReports);
-document.getElementById('flag-filter').addEventListener('change',renderRecordedReports);
-loadRecordedRun();
 
-/* ============ live scanner: POST /scan -> poll /status -> GET /card ============ */
-// Set the hosted HTTPS API in config.js. Never fall back to visitors' localhost
-// on the public site. Local development can use the backend at port 8080.
-var configuredAPI = window.SKILLXRAY_API_BASE;
-var localHost = ['localhost','127.0.0.1','[::1]'].indexOf(location.hostname) !== -1;
-var API = typeof configuredAPI === 'string' ? configuredAPI.replace(/\/$/,'') :
-  (localHost ? (location.port === '8080' ? '' : 'http://localhost:8080') : null);
-var serviceReady=false, busy=false, scanToken=null, reportURL=null;
-function setBusy(value){
-  busy=value;
-  document.getElementById('scan-button').disabled=value || !serviceReady;
-  document.getElementById('test-connection').disabled=value || !serviceReady || document.getElementById('provider').value==='server';
-}
-function providerChanged(){
-  var provider=document.getElementById('provider').value;
-  document.getElementById('api-key').value='';
-  document.getElementById('api-key').type='password';
-  document.getElementById('key-toggle').textContent='Show';
-  document.getElementById('key-toggle').setAttribute('aria-label','Show API key');
-  document.getElementById('model').value=provider==='openai'?'gpt-4o':provider==='anthropic'?'claude-sonnet-4-6':'';
-  ['model-field','key-field','model-note','key-note'].forEach(function(id){document.getElementById(id).style.display=provider==='server'?'none':'';});
-  document.getElementById('gateway-field').style.display=provider==='litellm'?'':'none';
-  document.getElementById('connection-status').textContent='';
-  setBusy(busy);
-}
-function toggleKey(){
-  var input=document.getElementById('api-key'), show=input.type==='password';
-  input.type=show?'text':'password';
-  document.getElementById('key-toggle').textContent=show?'Hide':'Show';
-  document.getElementById('key-toggle').setAttribute('aria-label',show?'Hide API key':'Show API key');
-}
-function connectionSettings(){
-  if(!serviceReady) throw new Error('The scan service is unavailable. Please try again later.');
-  var provider=document.getElementById('provider').value;
-  if(provider==='server') return null;
-  var key=document.getElementById('api-key').value.trim(), model=document.getElementById('model').value.trim();
-  if(!key){ document.getElementById('api-key').focus(); throw new Error('Paste your API key before continuing.'); }
-  if(!model){ document.getElementById('model').focus(); throw new Error('Enter a model available to your account.'); }
-  return {provider:provider,model:model,api_key:key,base_url:provider==='litellm'?document.getElementById('gateway').value:''};
-}
-function authHeaders(){ return scanToken?{Authorization:'Bearer '+scanToken}:{}; }
-function responseJSON(response){
-  return response.json().then(function(data){if(!response.ok) throw new Error(typeof data.detail==='string'?data.detail:'The request failed.');return data;});
-}
-function testConnection(){
-  var connection;
-  try {connection=connectionSettings();} catch(error){document.getElementById('connection-status').textContent=' '+error.message;return;}
-  setBusy(true);
-  document.getElementById('connection-status').textContent=' Checking…';
-  fetch(API+'/connection/test',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(connection)})
-    .then(responseJSON).then(function(data){document.getElementById('connection-status').textContent=' '+data.message;})
-    .catch(function(error){document.getElementById('connection-status').textContent=' '+error.message;})
-    .finally(function(){setBusy(false);});
-}
-(function connectService(){
-  if(API===null){document.getElementById('service-status').textContent='Online scanning is being set up. Please check back soon.';return;}
-  if(API && !/^https:\/\//.test(API) && !localHost){document.getElementById('service-status').textContent='The scan service needs a secure HTTPS connection.';return;}
-  fetch(API+'/capabilities').then(responseJSON).then(function(data){
-    if(data.providers.indexOf('litellm')!==-1){
-      document.getElementById('provider').add(new Option('LiteLLM · use my key','litellm'));
-      data.gateways.forEach(function(url){document.getElementById('gateway').add(new Option(url,url));});
-    }
-    if(data.server_connection) document.getElementById('provider').add(new Option('Use configured server','server'));
-    serviceReady=true;setBusy(false);
-    document.getElementById('service-status').textContent='Scan service connected';
-  }).catch(function(){document.getElementById('service-status').textContent='The scan service is unavailable. Refresh to try again.';});
-})();
-var pollTimer = null;
+var SKILLS = {
+  'apple-health-skill': {
+    chip:'Sends your health questions and your API key to an outside company.',
+    chipHarm:'Secondary Use',
+    claim:'Ask questions about your workouts, heart rate, activity rings, and fitness trends using AI.',
+    does:'Sends your health questions and workout history to an outside company (<b>api.transition.fun</b>) so its AI can answer them. The skill never says your health data leaves your computer.',
+    leaves:'Your health questions and your workout history',
+    where:'Sent to api.transition.fun, an outside company',
+    moves:12, watch:'Health data is sensitive, and this skill never mentions that it leaves your machine. Only install if you are comfortable sharing yours with api.transition.fun.',
+    findings:[
+      {harm:'Secondary Use', title:'Sent to an outside company to be answered',
+       why:'Your questions about your heart rate and activity are posted to api.transition.fun, a company the skill never names. Health data is expected to stay on your machine.',
+       file:'SKILL.md', lines:'45–48',
+       code:'curl -X POST -H "X-API-Key: $TRANSITION_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d \'{"message": "How has my resting heart rate changed?"}\' \\\n  "https://api.transition.fun/api/v1/coach/chat"'},
+      {harm:'Secondary Use', title:'Pulled through that same company',
+       why:'Your workouts for a date range are pulled through the same outside API, so your fitness history leaves your computer too.',
+       file:'SKILL.md', lines:'63–64',
+       code:'curl -H "X-API-Key: $TRANSITION_API_KEY" \\\n  "https://api.transition.fun/api/v1/workouts?start=2026-02-09&end=2026-02-15"'}
+    ]
+  },
+  'zoom': {
+    chip:'Keeps who was in your meetings, summarizes recordings, and sends credentials out.',
+    chipHarm:'Breach of Confidentiality',
+    claim:'Create and manage Zoom meetings and access cloud recordings via the Zoom API.',
+    does:'Saves who attended your meetings, builds summaries of your recordings, quietly reads your timezone, and sends your Zoom credentials to Zoom’s servers. Several of these it never mentions.',
+    leaves:'Meeting participant lists, recording summaries, your timezone, your Zoom credentials',
+    where:'Saved on disk, and sent to zoom.us',
+    moves:34, watch:'This one does several different things with data at once. Worth reading each before you trust it.',
+    findings:[
+      {harm:'Breach of Confidentiality', title:'Saves who was in your meetings',
+       why:'Participant lists include other people. Saving them keeps a persistent copy of data those people shared with you.',
+       file:'SKILL.md', lines:'12', code:'- **Meetings**: List, create, update, delete scheduled meetings'},
+      {harm:'Inference', title:'Summarizes your recordings',
+       why:'It derives a summary from your recording. The description only mentions listing recordings, not analyzing what is in them.',
+       file:'SKILL.md', lines:'13', code:'- **Recordings**: List cloud recordings with transcripts, summaries, and download links'},
+      {harm:'Surveillance', title:'Reads your timezone',
+       why:'It auto-detects your timezone to set local time. That is not part of what the skill says it does.',
+       file:'SKILL.md', lines:'15', code:'The script auto-detects your timezone if not explicitly specified with `--timezone`.'},
+      {harm:'Secondary Use', title:'Sends your Zoom credentials out',
+       why:'Your client id, client secret, and account id are sent to zoom.us to get an access token.',
+       file:'scripts/zoom_meetings.py', lines:'100', code:'resp = requests.post(TOKEN_URL, auth=auth, params=params)'}
+    ]
+  },
+  'telegram-telethon': {
+    chip:'Forwards your messages and sends voice notes out to be transcribed.',
+    chipHarm:'Disclosure',
+    claim:'Comprehensive Telegram automation via Telethon: sending and receiving messages, monitoring chats, and more.',
+    does:'Forwards messages between chats, and sends your voice notes to outside transcription services (Groq, Whisper) that turn them into text. Neither is spelled out up front.',
+    leaves:'Messages from your chats, and your voice notes',
+    where:'Forwarded to other chats, and sent to outside transcription vendors',
+    moves:231, watch:'This skill touches a lot of other people’s messages. Read what it forwards and where voice notes go.',
+    findings:[
+      {harm:'Disclosure', title:'Forwards a message to another chat',
+       why:'It can move a message from one chat into another, sharing what someone told you with people they did not choose.',
+       file:'SKILL.md', lines:'165', code:'python3 scripts/tg.py forward --from "Source" --to "Dest" --message-ids 123 456'},
+      {harm:'Secondary Use', title:'Sends voice notes out to be transcribed',
+       why:'With method groq or whisper, your voice messages are sent to an outside service to be turned into text.',
+       file:'SKILL.md', lines:'200', code:'python3 scripts/tg.py transcribe "Chat Name" MESSAGE_ID [--method telegram|groq|whisper]'},
+      {harm:'Inference', title:'Turns your voice into text it keeps',
+       why:'The transcript is a new piece of data made from your voice. The skill never says it produces one.',
+       file:'SKILL.md', lines:'200', code:'python3 scripts/tg.py transcribe "Chat Name" MESSAGE_ID [--method telegram|groq|whisper]'},
+      {harm:'Secondary Use', title:'Transcribes many voice notes at once',
+       why:'Batch mode sends multiple voice messages to the outside service in one go.',
+       file:'SKILL.md', lines:'203', code:'python3 scripts/tg.py transcribe "Chat Name" --batch [--limit 10] [--method telegram|groq|whisper]'}
+    ]
+  },
+  'chrome-history': {
+    chip:'Copies your browsing history to a shared temp folder and guesses your device.',
+    chipHarm:'Increased Accessibility',
+    claim:'Query Chrome browsing history with natural language. Filter by date range, article type, keywords, and specific sites.',
+    does:'Copies your Chrome browsing history into a shared temp folder that other accounts on the machine can read, and never deletes it. It also guesses which device you were on.',
+    leaves:'A full copy of your Chrome browsing history',
+    where:'Copied to /tmp, a shared folder other accounts can read',
+    moves:32, watch:'Your browsing history is copied somewhere less protected and left there. On a shared computer, other people could open it.',
+    findings:[
+      {harm:'Increased Accessibility', title:'Copies your history to a shared temp folder',
+       why:'Your Chrome History file is copied to /tmp with no cleanup. /tmp is readable by other accounts on the machine.',
+       file:'chrome_history_query.py', lines:'300', code:'shutil.copy2(chrome_history_path, temp_copy)'},
+      {harm:'Increased Accessibility', title:'Copies your Chrome sync data too',
+       why:'A second copy, of your sync database, is staged in the same shared place and left behind.',
+       file:'chrome_history_query.py', lines:'194', code:'shutil.copytree(leveldb_path, temp_path)'},
+      {harm:'Inference', title:'Guesses what device you were on',
+       why:'From the records it works out things like “iPhone”. That is a new fact it was not asked for.',
+       file:'chrome_history_query.py', lines:'152', code:"if 'IOS-PHONE' in value:\n    devices[device_id] = 'iPhone'"}
+    ]
+  },
+  'wispr-analytics': {
+    chip:'Writes your mood and mental-health insights to a file other apps can read.',
+    chipHarm:'Increased Accessibility',
+    claim:'Analyze Wispr Flow voice dictation history for self-reflection, work patterns, or mental-health insights.',
+    does:'Writes reports about your mood and mental-health patterns to a shared temp folder that other accounts can read, and leaves them there.',
+    leaves:'Reports about your mood, energy, and mental-health patterns',
+    where:'Written to /tmp, a shared folder other accounts can read',
+    moves:89, watch:'These reports are about your mental health. Leaving them in a shared folder means others on the machine could read them.',
+    findings:[
+      {harm:'Increased Accessibility', title:'Saves a mood dashboard to a shared folder',
+       why:'A weekly dashboard with mental-health insights is written to /tmp, which other accounts can read. No cleanup is shown.',
+       file:'SKILL.md', lines:'64', code:'python3 scripts/extract_wispr.py --period week --compare --graphs /tmp/wispr-week.html'},
+      {harm:'Increased Accessibility', title:'Saves a voice-tone report to a shared folder',
+       why:'A prosody (tone-of-voice) report, which reflects mood, is written to the same shared /tmp folder.',
+       file:'SKILL.md', lines:'106', code:'python3 scripts/extract_prosody.py --period week --output /tmp/prosody-week.md'}
+    ]
+  }
+};
+var SKILL_ORDER = ['apple-health-skill','zoom','telegram-telethon','chrome-history','wispr-analytics'];
 
-function demo(){ document.getElementById('url').value =
-  "https://github.com/glebis/claude-skills/tree/main/zoom"; }
-
-function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
-function logLine(msg){ var log=document.getElementById('log');
-  log.textContent += msg + "\n"; log.scrollTop = log.scrollHeight; }
-
-/* pipeline step names (from the backend) -> progress segment index */
-function segFor(status, step){
-  if (status === 'queued' || status === 'fetching') return 0;
-  if (!step) return 1;
-  if (step.indexOf('step2') === 0) return 2;
-  if (step.indexOf('step3') === 0) return 3;
-  if (step.indexOf('step4') === 0) return 4;
-  if (step.indexOf('step5') === 0) return 5;
-  return 1;                                     // step0_gate / step1 territory
-}
-function paintSteps(active, allDone){
-  document.querySelectorAll('.step').forEach(function(s, j){
-    s.className = 'step' + (allDone ? ' done' : j < active ? ' done' : j === active ? ' on' : '');
-  });
-}
-
-var currentScanId = null;
-
-function beginRun(){
-  setBusy(true); scanToken=null;
-  if(reportURL){URL.revokeObjectURL(reportURL);reportURL=null;}
-  if(pollTimer) clearInterval(pollTimer);
-  currentScanId = null;
-  document.getElementById('stopbtn').style.display='none';
-  document.getElementById('result').style.display='none';
-  document.getElementById('progress').style.display='block';
-  document.getElementById('log').textContent='';
-  paintSteps(0, false);
-}
-
-function handleAccepted(res){
-  if(!res.ok){ showError(res.body.detail || "request rejected"); return; }
-  logLine("→ accepted, scan id " + res.body.scan_id);
-  currentScanId = res.body.scan_id;
-  scanToken=res.body.access_token || null;
-  document.getElementById("api-key").value="";
-  if(res.body.provider) logLine("→ " + res.body.provider + " / " + res.body.model);
-  document.getElementById('stopbtn').style.display='block';
-  poll(res.body.scan_id);
-}
-
-function cancelScan(){
-  if(!currentScanId) return;
-  var id = currentScanId;
-  document.getElementById('stopbtn').style.display='none';
-  logLine("✕ stopping…");
-  fetch(API + "/scan/" + id + "/cancel", { method:"POST", headers:authHeaders() })
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      if(pollTimer) clearInterval(pollTimer);
-      currentScanId = null; setBusy(false);
-      if(res.status === 'cancelled'){ logLine("✕ scan cancelled"); }
-      else { logLine("— too late to cancel: scan already " + res.status); }
-    })
-    .catch(function(){ logLine("✗ could not reach the backend to cancel"); });
-}
-
-function startScan(){
-  if(busy) return;
-  var connection;
-  try {connection=connectionSettings();} catch(error){showError(error.message);return;}
-  var url = document.getElementById('url').value.trim();
-  if(!url){ document.getElementById('url').focus(); return; }
-  beginRun();
-  logLine("→ submitting " + url);
-
-  fetch(API + "/scan", { method:"POST",
-      headers:{ "Content-Type":"application/json" }, body: JSON.stringify({url:url,connection:connection}) })
-    .then(function(r){ return r.json().then(function(b){ return {ok:r.ok, body:b}; }); })
-    .then(handleAccepted)
-    .catch(function(){ showError("cannot reach the scan service — is the backend running?"); });
-}
-
-/* ---- drag & drop a skill folder: stage -> review -> POST /scan/upload ---- */
-// Mirror of the backend's skip rules, so the review list is honest about what
-// will actually be analyzed (backend/fetcher.py SKIP_EXTENSIONS + dotfiles).
-var SKIP_EXT = [".png",".jpg",".jpeg",".gif",".webp",".ico",".pdf",".zip",".gz",
-                ".tar",".mp3",".mp4",".mov",".woff",".woff2",".ttf",".eot"];
-var staged = null;   // {files:[...], name:"folder"} while a folder waits for Scan
-
-function pathOf(f){ return f.relPath || f.webkitRelativePath || f.name; }
-function isSkipped(p){
-  var base = p.split("/").pop();
-  if(base.charAt(0) === ".") return true;
-  var dot = base.lastIndexOf(".");
-  return dot !== -1 && SKIP_EXT.indexOf(base.slice(dot).toLowerCase()) !== -1;
-}
-function fmtSize(b){ return b < 1024 ? b + " B" : b < 1048576 ?
-  (b/1024).toFixed(1) + " KB" : (b/1048576).toFixed(1) + " MB"; }
-
-function scanNow(){                 // the ONE scan button: folder if staged, else URL
-  if(staged) submitStaged();
-  else startScan();
-}
-
-function stageFolder(files){
-  files = Array.prototype.slice.call(files);
-  if(!files.length){ showError("that folder looks empty"); return; }
-  if(files.length > 200){ showError("more than 200 files — not a normal skill folder"); return; }
-  var name = pathOf(files[0]).split("/")[0];
-  if(pathOf(files[0]).indexOf("/") === -1) name = "dropped files";
-  staged = { files: files, name: name };
-
-  var kept = 0, total = 0, hasSkillMd = false, rows = "";
-  files.forEach(function(f){
-    var p = pathOf(f), skip = isSkipped(p);
-    var shown = p.split("/").slice(1).join("/") || p;   // path inside the folder
-    if(!skip){ kept++; total += f.size; }
-    if(!skip && shown === "SKILL.md") hasSkillMd = true;
-    rows += '<div class="frow' + (skip ? ' fskip' : '') + '"><span>' + esc(shown) +
-            (skip ? ' <i>(skipped)</i>' : '') + '</span><span class="fsize">' +
-            fmtSize(f.size) + '</span></div>';
-  });
-
-  var warn = "";
-  if(!hasSkillMd) warn = '<div class="swarn">⚠ no SKILL.md at the top of this folder — the scan will be rejected</div>';
-  else if(total > 5*1048576) warn = '<div class="swarn">⚠ over 5 MB of analyzable files — the scan will be rejected</div>';
-
-  // the folder takes the URL's place in the input row, sharing the one Scan button
-  var chip = document.getElementById('folderchip');
-  chip.innerHTML = '<span class="fname">📁 ' + esc(staged.name) + '</span>' +
-    '<span class="fmeta">' + kept + ' file' + (kept===1?'':'s') + ' · ' + fmtSize(total) + '</span>' +
-    '<a class="fx" onclick="unstageFolder()" title="remove this folder">✕</a>';
-  chip.style.display = 'flex';
-  document.getElementById('url').style.display = 'none';
-
-  var box = document.getElementById('stagebox');
-  box.innerHTML = '<div class="filelist">' + rows + '</div>' + warn;
-  box.style.display = 'block';
-  document.getElementById('dropzone').style.display = 'none';
-  document.getElementById('ordiv').style.display = 'none';
-  document.getElementById('result').style.display = 'none';
-}
-
-function unstageFolder(){
-  staged = null;
-  document.getElementById('folderchip').style.display = 'none';
-  document.getElementById('url').style.display = '';
-  document.getElementById('stagebox').style.display = 'none';
-  document.getElementById('dropzone').style.display = 'block';
-  document.getElementById('ordiv').style.display = 'flex';
-}
-
-function submitStaged(){
-  if(!staged || busy) return;
-  var connection;
-  try {connection=connectionSettings();} catch(error){showError(error.message);return;}
-  var files = staged.files;
-  unstageFolder();
-  beginRun();
-  logLine("→ uploading " + files.length + " file" + (files.length===1?"":"s"));
-  var fd = new FormData();
-  if(connection) fd.append("connection",JSON.stringify(connection));
-  files.forEach(function(f){ fd.append("files", f, pathOf(f)); });
-  fetch(API + "/scan/upload", { method:"POST", body: fd })
-    .then(function(r){ return r.json().then(function(b){ return {ok:r.ok, body:b}; }); })
-    .then(handleAccepted)
-    .catch(function(){ showError("cannot reach the scan service — is the backend running?"); });
-}
-
-// Walk a dropped file/directory entry recursively; resolves to a flat File list
-// with .relPath set ("folder/scripts/x.py").
-function readEntry(entry, path){
-  return new Promise(function(resolve){
-    if(entry.isFile){
-      entry.file(function(f){ f.relPath = path + entry.name; resolve([f]); },
-                 function(){ resolve([]); });
-    } else if(entry.isDirectory){
-      var reader = entry.createReader(), pending = [];
-      (function readBatch(){
-        reader.readEntries(function(entries){
-          if(!entries.length){
-            Promise.all(pending).then(function(lists){
-              resolve([].concat.apply([], lists)); });
-          } else {
-            entries.forEach(function(e){ pending.push(readEntry(e, path + entry.name + "/")); });
-            readBatch();                       // readEntries returns results in batches
-          }
-        }, function(){ resolve([]); });
-      })();
-    } else resolve([]);
-  });
-}
+// plain data-category label for each finding (same order as findings[]) — app-store style
+var DATA_CATS = {
+  'apple-health-skill': ['Your health questions','Your workout history'],
+  'zoom':               ['Who was in your meetings','Your recordings','Your timezone','Your Zoom credentials'],
+  'telegram-telethon':  ['Your messages','Your voice notes','Your voice notes','Your voice notes'],
+  'chrome-history':     ['Your browsing history','Your Chrome sync data','Which device you use'],
+  'wispr-analytics':    ['Your mood & mental-health insights','Your tone of voice']
+};
+// in-claim behaviours that are expected — the reassuring "looks fine" group
+var LOOKS_FINE = {
+  'apple-health-skill': ['Reads your Apple Health data on your machine to answer you.'],
+  'zoom':               ['Lists and creates your meetings through Zoom’s own API.'],
+  'telegram-telethon':  ['Sends and reads messages in the chats you point it at.'],
+  'chrome-history':     ['Searches your browsing history on your machine to answer you.'],
+  'wispr-analytics':    ['Reads your Wispr dictation history on your machine to analyse it.']
+};
 
 (function(){
-  var dz = document.getElementById('dropzone');
-  dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('drag'); });
-  dz.addEventListener('dragleave', function(){ dz.classList.remove('drag'); });
-  dz.addEventListener('drop', function(e){
-    e.preventDefault(); dz.classList.remove('drag');
-    var items = e.dataTransfer.items, roots = [], singleDir = false;
-    for(var i=0;i<items.length;i++){
-      var entry = items[i].webkitGetAsEntry && items[i].webkitGetAsEntry();
-      if(entry) roots.push(readEntry(entry, ""));
-      if(i===0 && entry && entry.isDirectory && items.length===1) singleDir = true;
-    }
-    Promise.all(roots).then(function(lists){
-      var files = [].concat.apply([], lists);
-      if(!singleDir)   // loose files dropped: give them a folder so the server sees folder/SKILL.md
-        files.forEach(function(f){ f.relPath = "dropped-skill/" + f.relPath; });
-      stageFolder(files);
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  // build the left picker: one selectable row per example skill
+  var grid=document.getElementById('tryGrid');
+  grid.innerHTML='<div class="md-lab">Example skills &middot; tap to open</div>'
+    +SKILL_ORDER.map(function(key){
+      var s=SKILLS[key], h=HARM[s.chipHarm], n=s.findings.length;
+      return '<button class="md-item" data-skill="'+key+'" role="tab" aria-selected="false" '
+        +'title="'+n+' things worth a look">'
+        +'<span class="dot" style="background:'+h.dot+'"></span>'
+        +'<span class="md-txt"><span class="nm">'+esc(key)+'</span>'
+          +'<span class="desc">'+esc(s.claim)+'</span></span>'
+        +'<span class="md-flag">'+n+'</span></button>';
+    }).join('');
+
+  var mount=document.getElementById('cardMount');
+
+  function render(key){
+    var s=SKILLS[key];
+    var n=s.findings.length;
+
+    // reflect the selection in the left list
+    Array.prototype.forEach.call(grid.querySelectorAll('.md-item'),function(it){
+      var on=it.getAttribute('data-skill')===key;
+      it.classList.toggle('selected',on);
+      it.setAttribute('aria-selected',String(on));
     });
+
+    var lead=
+      '<div class="pc-lead">'
+      +'<div class="k k-say">What it says it does</div>'
+      +'<div class="say-line say">“'+esc(s.claim)+'”</div>'
+      +'<div class="k k-does">What the code actually does</div>'
+      +'<p>'+s.does+'</p></div>';
+
+    var cats=DATA_CATS[key]||[];
+    var rows=s.findings.map(function(f,i){
+      var h=HARM[f.harm];
+      var cat=cats[i]||f.title;
+      return '<li class="fitem">'
+        +'<button class="fhead" aria-expanded="false" data-i="'+i+'">'
+          +'<span class="dot" style="background:'+h.dot+'"></span>'
+          +'<span class="ftitle"><span class="dcat">'+esc(cat)+'</span>'
+            +'<span class="dwhat">'+esc(f.title)+'</span></span>'
+          +'<span class="flag">Worth a look</span>'
+          +'<span class="chev">&#9656;</span>'
+        +'</button>'
+        +'<div class="fbody" hidden>'
+          +'<p class="fwhy">'+esc(f.why)+'</p>'
+          +'<p class="loc">'+esc(f.file)+' &middot; line'+(String(f.lines).indexOf('–')>-1?'s':'')+' '+esc(f.lines)+'</p>'
+          +'<pre><code>'+esc(f.code)+'</code></pre>'
+          +'<p class="fkind-full">In privacy terms: '+esc(h.plain)+' (Solove: '+esc(f.harm)+')</p>'
+        +'</div></li>';
+    }).join('');
+
+    var fine=(LOOKS_FINE[key]||[]).map(function(t){
+      return '<li><span class="tick">&#10003;</span><span>'+esc(t)+'</span></li>';
+    }).join('');
+    var fineBlock = fine
+      ? '<div class="pc-sec fine"><div class="pc-sec-h">Looks fine</div>'
+        +'<ul class="finelist">'+fine+'</ul></div>'
+      : '';
+
+    mount.innerHTML=
+      '<div class="top"><span class="t">Privacy Card</span><span class="tag">'+esc(s.tag||key)+'</span></div>'
+      +lead
+      +'<div class="crow2 watch"><div class="k">⚠ Before you install</div><div class="v">'+esc(s.watch)+'</div></div>'
+      +'<div class="pc-sec"><div class="pc-sec-h">What it does with your data'
+        +'<span class="pc-count">'+s.moves+' data moves read &middot; '+n+' worth a look</span></div>'
+        +'<ol class="flist">'+rows+'</ol></div>'
+      +fineBlock;
+
+    // each finding row opens to show the evidence
+    Array.prototype.forEach.call(mount.querySelectorAll('.fhead'),function(btn){
+      btn.addEventListener('click',function(){
+        var body=btn.nextElementSibling;
+        var open=btn.getAttribute('aria-expanded')==='true';
+        btn.setAttribute('aria-expanded',String(!open));
+        body.hidden=open;
+      });
+    });
+  }
+
+  var isNarrow=window.matchMedia('(max-width:760px)');
+
+  // picking a skill updates the card in place; on narrow screens the card is
+  // below the list, so scroll to it — on desktop it's already beside the list
+  grid.addEventListener('click',function(e){
+    var b=e.target.closest('.md-item'); if(!b) return;
+    render(b.getAttribute('data-skill'));
+    if(isNarrow.matches) mount.scrollIntoView({behavior:'smooth',block:'start'});
   });
-  document.getElementById('folderpick').addEventListener('change', function(){
-    if(this.files.length) stageFolder(this.files);
-    this.value = "";                            // allow re-picking the same folder
-  });
+
+  // let the scanner's "Open the Privacy Card" button reuse this renderer
+  window.__openCard = function(key){
+    render(key && SKILLS[key] ? key : 'apple-health-skill');
+    document.getElementById('try').scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  // the live scanner injects a real result and shows it as its own card here
+  window.__setLiveSkill = function(key, skill, cats, fine){
+    SKILLS[key] = skill;
+    DATA_CATS[key] = cats || [];
+    LOOKS_FINE[key] = fine || [];
+    var h = HARM[skill.chipHarm] || {dot:'var(--amber)'};
+    var n = skill.findings.length;
+    var row = '<button class="md-item" data-skill="'+esc(key)+'" role="tab" aria-selected="false" '
+      +'title="your scan">'
+      +'<span class="dot" style="background:'+h.dot+'"></span>'
+      +'<span class="md-txt"><span class="nm">'+esc(skill.tag||key)+'</span>'
+        +'<span class="desc">'+esc(skill.claim||'this skill')+'</span></span>'
+      +'<span class="md-flag">'+n+'</span></button>';
+    var existing = grid.querySelector('.md-item[data-skill="'+key.replace(/"/g,'')+'"]');
+    if(existing){ existing.outerHTML = row; }
+    else { grid.querySelector('.md-lab').insertAdjacentHTML('afterend', row); }
+    render(key);
+    document.getElementById('try').scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  render('apple-health-skill'); // default card shown at rest
 })();
 
-function poll(scanId){
-  var lastStep = "";
-  pollTimer = setInterval(function(){
-    fetch(API + "/status/" + scanId, {headers:authHeaders()}).then(responseJSON)
-      .then(function(st){
-        if(st.step && st.step !== lastStep){ lastStep = st.step; logLine("… " + st.step); }
-        paintSteps(segFor(st.status, st.step), false);
-        var over = st.status === 'done' || st.status === 'failed' || st.status === 'cancelled';
-        if(over){ clearInterval(pollTimer); currentScanId = null; if(st.status!=='done') setBusy(false);
-                  document.getElementById('stopbtn').style.display='none'; }
-        if(st.status === 'done'){ paintSteps(0, true); showCard(scanId); }
-        if(st.status === 'failed'){ showError(st.error); }
-        if(st.status === 'cancelled'){ logLine("✕ scan cancelled"); }
-      })
-      .catch(function(error){ clearInterval(pollTimer); showError(error.message+" Refreshing loses access to this scan."); });
-  }, 2500);
-}
+(function(){
+  function esc(s){ return String(s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
-function showError(msg){
-  setBusy(false);
-  document.getElementById('progress').style.display='none';
-  var r = document.getElementById('result');
-  r.innerHTML = '<div class="vsum">✗ ' + esc(msg) + '</div>';
-  r.style.display='block';
-}
+  var prog = document.getElementById('prog');
+  var stepsEl = document.getElementById('steps');
+  var steps = Array.prototype.slice.call(document.querySelectorAll('#steps li'));
+  var foot = document.getElementById('pfoot');
+  var pok = document.getElementById('pok');
+  var pnote = document.getElementById('pnote');
+  var progName = document.getElementById('progName');
+  var btn = document.getElementById('scanBtn');
+  var drop = document.querySelector('.drop');
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var running = false, timer = null;
+  var scanned = 'apple-health-skill';        // which skill the last scan resolved to
 
-function showCard(scanId){
-  var headers=authHeaders();
-  fetch(API+'/card/'+scanId,{headers:headers}).then(responseJSON).then(function(card){
-    var result=document.getElementById('result');
-    document.getElementById('progress').style.display='none';
-    result.style.display='block';
-    if(card.skipped){result.innerHTML='<div class="advice"><b>Analysis skipped:</b> '+esc(card.reason)+'</div>';return;}
-    return fetch(API+'/card/'+scanId+'/html',{headers:headers}).then(function(response){
-      if(!response.ok) throw new Error('The report could not be loaded.');
-      return response.text();
-    }).then(function(html){
-      var policy='<meta http-equiv="Content-Security-Policy" content="default-src &apos;none&apos;; style-src &apos;unsafe-inline&apos;; img-src data:">';
-      reportURL=URL.createObjectURL(new Blob([policy,html],{type:'text/html'}));
-      result.innerHTML='';
-      var info=document.createElement('p');info.className='meta';
-      info.textContent=card.connection ? 'Analyzed with '+card.connection.provider+' / '+card.connection.model : 'Analysis complete';
-      result.appendChild(info);
-      var frame=document.createElement('iframe');frame.title='Privacy Facts card';
-      frame.setAttribute('sandbox','');frame.src=reportURL;
-      frame.style.cssText='width:100%;height:900px;border:2.5px solid var(--rule);background:#fff';
-      result.appendChild(frame);
-      var download=document.createElement('a');download.href=reportURL;download.download='skillxray-report.html';download.textContent='Download report';
-      result.appendChild(download);
+  // the five examples carry real, full-model results already; a pasted alias
+  // opens that precomputed card instantly. Anything else is scanned for real.
+  var ALIASES = {
+    'apple-health-skill': ['apple-health','applehealth','apple_health'],
+    'zoom': ['zoom'],
+    'telegram-telethon': ['telegram','telethon'],
+    'chrome-history': ['chrome-history','chrome_history','chromehistory','browsing-history','browser-history'],
+    'wispr-analytics': ['wispr']
+  };
+  function resolveSkill(url){
+    var u = (url||'').toLowerCase();
+    if(!u || u.indexOf('github.com')>-1) return null;   // a real repo link is scanned, never aliased
+    for(var key in ALIASES){
+      if(u.indexOf(key)>-1) return key;
+      var al = ALIASES[key];
+      for(var i=0;i<al.length;i++){ if(u.indexOf(al[i])>-1) return key; }
+    }
+    return null;
+  }
+  function subsFor(key){
+    var s = SKILLS[key], n = s.findings.length, seen={}, kinds=[];
+    s.findings.forEach(function(f){ if(!seen[f.harm]){seen[f.harm]=1;kinds.push(f.harm);} });
+    var kindLine = kinds.length===1 ? ('all '+n+' are '+kinds[0]) : (kinds.length+' kinds: '+kinds.join(', '));
+    return [ 'SKILL.md + its scripts',
+             s.moves+' places it touches your data',
+             n+' go further than the skill promises',
+             kindLine, 'ready to read' ];
+  }
+  function setSub(li){ li.querySelector('.sub').textContent='↳ '+li.getAttribute('data-sub'); }
+  function reset(){ steps.forEach(function(li){ li.className='pending'; li.querySelector('.sub').textContent=''; }); foot.classList.remove('show'); }
+  function currentMode(){ var s=document.querySelector('.mode.sel'); return s?s.getAttribute('data-mode'):'browser'; }
+  function note(html){ stepsEl.hidden=true; foot.classList.remove('show'); pnote.hidden=false; pnote.innerHTML=html; running=false; }
+
+  /* ---- known example: open its precomputed card (from the full model) ---- */
+  function runBaked(key){
+    running = true; scanned = key;
+    pnote.hidden = true; stepsEl.hidden = false;
+    progName.textContent = key;
+    var subs = subsFor(key);
+    steps.forEach(function(li,i){ li.setAttribute('data-sub', subs[i]); });
+    pok.textContent = '✓ Done. '+SKILLS[key].findings.length+' things worth a look.';
+    if(reduce){ steps.forEach(function(li){ li.className='done'; setSub(li); }); foot.classList.add('show'); running=false; return; }
+    var i=0;
+    (function tick(){
+      if(i>0){ steps[i-1].className='done'; setSub(steps[i-1]); }
+      if(i<steps.length){ steps[i].className='active'; i++; timer=setTimeout(tick,900); }
+      else { foot.classList.add('show'); running=false; }
+    })();
+  }
+
+  /* ---- live scan: fetch the skill from GitHub, run a model in the browser ---- */
+  function parseGitHub(url){
+    if(!url) return null;
+    var m = url.replace(/^https?:\/\//,'').replace(/^www\./,'');
+    if(m.indexOf('github.com/')!==0) return null;
+    var parts = m.replace('github.com/','').split('/').filter(Boolean);
+    if(parts.length<2) return null;
+    var owner=parts[0], repo=parts[1].replace(/\.git$/,''), ref=null, path='';
+    if(parts.length>=4 && (parts[2]==='tree'||parts[2]==='blob')){
+      ref=parts[3]; path=parts.slice(4).join('/');
+      if(parts[2]==='blob') path=path.replace(/\/[^\/]+$/,'');   // a file link -> its folder
+    }
+    return {owner:owner, repo:repo, ref:ref, path:path, name:(path?path.split('/').pop():repo)};
+  }
+  async function ghJSON(url){
+    var r = await fetch(url, {headers:{'Accept':'application/vnd.github+json'}});
+    if(r.status===403) throw new Error('GitHub is rate-limiting anonymous requests right now. Give it a minute and try again.');
+    if(r.status===404) throw new Error('GitHub could not find that path. Check the link points to a skill folder.');
+    if(!r.ok) throw new Error('GitHub returned '+r.status+' for that path.');
+    return r.json();
+  }
+  async function fetchSkill(p){
+    var api='https://api.github.com/repos/'+p.owner+'/'+p.repo+'/contents/'
+      +encodeURI(p.path||'')+(p.ref?('?ref='+encodeURIComponent(p.ref)):'');
+    var listing = await ghJSON(api);
+    if(!Array.isArray(listing)) throw new Error('That link points to a single file, not a folder. Link the folder that holds SKILL.md.');
+    var exts=/\.(md|py|js|mjs|ts|sh|rb|txt|ya?ml|json)$/i, wanted=[];
+    listing.forEach(function(it){ if(it.type==='file' && (/^SKILL\.md$/i.test(it.name)||exts.test(it.name))) wanted.push(it); });
+    var dirs = listing.filter(function(it){ return it.type==='dir' && /^(scripts|bin|src|lib)$/i.test(it.name); }).slice(0,2);
+    for(var d=0; d<dirs.length; d++){
+      try{ var sub=await ghJSON(dirs[d].url);
+        if(Array.isArray(sub)) sub.forEach(function(it){ if(it.type==='file'&&exts.test(it.name)) wanted.push(it); });
+      }catch(e){}
+    }
+    wanted.sort(function(a,b){ return (/^SKILL\.md$/i.test(b.name)?1:0)-(/^SKILL\.md$/i.test(a.name)?1:0); });
+    wanted = wanted.slice(0,8);
+    if(!wanted.length) throw new Error('No SKILL.md or scripts were found in that folder.');
+    var files=[], total=0, CAP=14000;
+    for(var i=0;i<wanted.length && total<CAP;i++){
+      var it=wanted[i], txt='';
+      try{ txt = await (await fetch(it.download_url)).text(); }catch(e){ continue; }
+      var room=CAP-total; if(txt.length>room) txt=txt.slice(0,room)+'\n…(truncated)…';
+      files.push({path:(it.path||it.name), text:txt}); total+=txt.length;
+    }
+    return { files:files, combined: files.map(function(f){ return '=== FILE: '+f.path+' ===\n'+f.text; }).join('\n\n') };
+  }
+
+  var HARM_KEYS=['Secondary Use','Breach of Confidentiality','Exclusion','Increased Accessibility','Inference','Surveillance','Aggregation','Disclosure'];
+  function normalizeHarm(x){
+    if(!x) return 'Secondary Use';
+    var s=String(x).toLowerCase();
+    for(var i=0;i<HARM_KEYS.length;i++){ if(HARM_KEYS[i].toLowerCase()===s) return HARM_KEYS[i]; }
+    for(var j=0;j<HARM_KEYS.length;j++){ var k=HARM_KEYS[j].toLowerCase(); if(k.indexOf(s)>-1||s.indexOf(k)>-1) return HARM_KEYS[j]; }
+    return 'Secondary Use';
+  }
+  var SYS = [
+    'You are SkillXray, a privacy analyzer for AI agent "skills" (a SKILL.md plus scripts). You READ code, you never run it.',
+    'Your job is privacy of use: does the skill do things with personal data that go beyond what its own description says it does?',
+    'This is not security. The skills here are benign but can be honest but negligent. Never use the words attacker, threat, malware, or malicious. A finding is something a careful person would want to look at, not an accusation.',
+    'A data move is any place the code reads, stores, sends, or infers personal data. Flag a move only when it goes further than the SKILL.md description implies: for example it sends data to an outside service the description never names, writes personal data to a shared or world-readable place, infers a new sensitive fact (mood, health, identity), forwards other people\'s data, or keeps data the task did not need.',
+    'Label each flagged move with exactly one of: Secondary Use, Breach of Confidentiality, Exclusion, Increased Accessibility, Inference, Surveillance, Aggregation, Disclosure.',
+    'Return ONLY a JSON object, no prose, shaped exactly like:',
+    '{"claim": string, "does": string, "summary": string, "watch": string, "dataMoves": integer, "findings": [{"category": string, "title": string, "why": string, "file": string, "lines": string, "code": string, "harm": string}], "looksFine": [string]}',
+    'claim = one sentence for what SKILL.md says the skill is for. does = one or two plain sentences on what the code actually does with data. summary = one short headline sentence. watch = one sentence to keep in mind, or "" if nothing was flagged. category = a short data-type label like "Your browsing history". title = a short phrase for what it does. why = one or two plain sentences, no jargon. file/lines = where you saw it. code = the exact snippet, at most two lines. looksFine = one to three expected, in-description behaviours that are fine.',
+    'Write for a non-developer. Plain, calm, specific. Do not use em dashes.'
+  ].join('\n');
+
+  var engineCache={};
+  async function resolveModelId(sel){
+    var webllm = await window.__loadWebLLM();
+    var list = (webllm.prebuiltAppConfig && webllm.prebuiltAppConfig.model_list) || [];
+    var kw = String(sel||'').toLowerCase().split('|').filter(Boolean);
+    var hit = list.filter(function(m){ var id=m.model_id.toLowerCase(); return kw.every(function(k){return id.indexOf(k)>-1;}); });
+    if(!hit.length && kw.length) hit = list.filter(function(m){ return m.model_id.toLowerCase().indexOf(kw[0])>-1; });
+    if(!hit.length) throw new Error('That model was not found in your browser build. Try another from the list.');
+    return hit[0].model_id;
+  }
+  async function ensureEngine(modelId, onProgress){
+    if(engineCache[modelId]) return engineCache[modelId];
+    var webllm = await window.__loadWebLLM();
+    var engine = await webllm.CreateMLCEngine(modelId, {initProgressCallback:onProgress});
+    engineCache[modelId] = engine; return engine;
+  }
+  function parseJSON(txt){
+    txt = String(txt||'').replace(/```json/gi,'').replace(/```/g,'').trim();
+    var a=txt.indexOf('{'), b=txt.lastIndexOf('}');
+    if(a>-1&&b>-1) txt=txt.slice(a,b+1);
+    return JSON.parse(txt);
+  }
+  async function analyze(engine, name, combined){
+    var resp = await engine.chat.completions.create({
+      messages:[{role:'system',content:SYS},
+                {role:'user',content:'Skill name: '+name+'\n\nHere are the skill\'s files. Analyze them and return only the JSON.\n\n'+combined}],
+      temperature:0, max_tokens:1800, response_format:{type:'json_object'}
     });
-  }).catch(function(error){showError(error.message);}).finally(function(){setBusy(false);});
-}
+    return parseJSON(resp.choices[0].message.content);
+  }
 
+  /* ---- API-key mode: run the same analysis on OpenAI or Anthropic, straight
+     from the browser. The key and the skill's code go only to that vendor, for
+     this one request, and are never stored. ---- */
+  function apiErr(vendor, status, body){
+    var msg = vendor+' returned '+status+'.';
+    if(status===401 || status===403) msg = 'That '+vendor+' key was not accepted ('+status+'). Check the key is correct and has access.';
+    else if(status===429) msg = vendor+' is rate-limiting, or the key is out of quota ('+status+'). Try again shortly.';
+    else if(status===400) msg = vendor+' rejected the request ('+status+'), often an unavailable model for this key.';
+    try{ var j=JSON.parse(body); if(j && j.error && j.error.message) msg += ' '+j.error.message; }catch(e){}
+    return msg;
+  }
+  async function postJSON(url, headers, body, vendor){
+    var r;
+    try{ r = await fetch(url, {method:'POST', headers:headers, body:JSON.stringify(body)}); }
+    catch(e){ throw new Error('Could not reach '+vendor+' from the browser. Check your connection; some networks block direct API calls, in which case run it on your machine with the commands below.'); }
+    if(!r.ok){ var t=''; try{ t=await r.text(); }catch(e){} throw new Error(apiErr(vendor, r.status, t)); }
+    return r.json();
+  }
+  async function analyzeAPI(provider, key, name, combined){
+    var userMsg = 'Skill name: '+name+'\n\nHere are the skill\'s files. Analyze them and return only the JSON.\n\n'+combined;
+    if(provider==='anthropic'){
+      var d = await postJSON('https://api.anthropic.com/v1/messages', {
+        'content-type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      }, {
+        model:'claude-3-5-sonnet-latest', max_tokens:2500, temperature:0,
+        system:SYS, messages:[{role:'user', content:userMsg}]
+      }, 'Anthropic');
+      var txt = (d.content && d.content[0] && d.content[0].text) || '';
+      return parseJSON(txt);
+    } else {
+      var d2 = await postJSON('https://api.openai.com/v1/chat/completions', {
+        'content-type':'application/json',
+        'authorization':'Bearer '+key
+      }, {
+        model:'gpt-4o', temperature:0, max_tokens:2500,
+        response_format:{type:'json_object'},
+        messages:[{role:'system', content:SYS}, {role:'user', content:userMsg}]
+      }, 'OpenAI');
+      return parseJSON(d2.choices[0].message.content);
+    }
+  }
+  function buildLiveSkill(name, j){
+    var raw = Array.isArray(j.findings)?j.findings:[];
+    var findings = raw.slice(0,12).map(function(f){
+      return { harm: normalizeHarm(f.harm),
+        title: String(f.title||'Touches your data'),
+        why: String(f.why||''),
+        file: String(f.file||'SKILL.md'),
+        lines: (String(f.lines||'').trim())||'—',
+        code: String(f.code||'').slice(0,400) };
+    });
+    var n=findings.length;
+    var moves = (typeof j.dataMoves==='number' && j.dataMoves>=n) ? j.dataMoves : n;
+    var skill = {
+      tag: name,
+      chip: String(j.summary || j.does || 'Scanned this skill.'),
+      chipHarm: n ? findings[0].harm : 'Secondary Use',
+      claim: String(j.claim||''),
+      does: esc(String(j.does||'')),          // render injects does as HTML, so escape it here
+      moves: moves,
+      watch: n ? String(j.watch||'Read the flagged items below before you install.')
+               : 'Nothing here looked like it goes beyond what the skill describes. It is still your call before you install.',
+      findings: findings
+    };
+    var cats = findings.map(function(f,i){ var c=raw[i]&&raw[i].category; return String(c||f.title); });
+    var fine = (Array.isArray(j.looksFine)?j.looksFine:[]).slice(0,4).map(String);
+    var base=(name||'your-skill').toLowerCase().replace(/[^a-z0-9._-]/g,'')||'your-skill';
+    var key = SKILLS[base] ? base+'-scan' : base;      // never clobber an example
+    return {key:key, skill:skill, cats:cats, fine:fine};
+  }
 
+  async function runLive(raw, mode){
+    mode = mode || 'browser';
+    running=true; scanned=null;
+    reset(); prog.hidden=false; stepsEl.hidden=false; pnote.hidden=true;
+    prog.scrollIntoView({behavior:'smooth', block:'nearest'});
+    steps[2].setAttribute('data-sub','checked against SKILL.md');
+    steps[3].setAttribute('data-sub','labeled what goes further');
+    steps[4].setAttribute('data-sub','done');
+    try{
+      var provider=null, key=null;
+      if(mode==='key'){
+        provider = (((document.getElementById('provider')||{}).value)||'OpenAI').toLowerCase().indexOf('anthropic')>-1 ? 'anthropic' : 'openai';
+        key = (((document.getElementById('apiKey')||{}).value)||'').trim();
+        if(!key) throw new Error('Paste your '+(provider==='anthropic'?'Anthropic':'OpenAI')+' API key above, or switch to the free in-browser model.');
+      } else if(!('gpu' in navigator)){
+        throw new Error('This browser has no WebGPU, so the in-browser model cannot run. Try Chrome or Edge, use your API key, or run it on your machine with the commands below.');
+      }
+      var p = parseGitHub(raw);
+      if(!p) throw new Error('Paste a GitHub link to a skill folder, like github.com/owner/repo/tree/main/skills/name.');
+      progName.textContent = p.name;
 
+      steps[0].className='active';
+      var sk = await fetchSkill(p);
+      steps[0].className='done'; steps[0].setAttribute('data-sub', sk.files.length+' files, '+Math.max(1,Math.round(sk.combined.length/1024))+' KB'); setSub(steps[0]);
+
+      var j;
+      if(mode==='key'){
+        var vname = provider==='anthropic' ? 'Anthropic' : 'OpenAI';
+        steps[1].className='active';
+        pnote.hidden=false; pnote.innerHTML='Sending the code to '+vname+' over an encrypted connection, for this one scan.';
+        steps[1].className='done'; steps[1].setAttribute('data-sub', vname); setSub(steps[1]);
+
+        steps[2].className='active';
+        pnote.innerHTML='Reading the code and checking it against what the skill promises.';
+        j = await analyzeAPI(provider, key, p.name, sk.combined);
+        steps[2].className='done'; setSub(steps[2]);
+      } else {
+        steps[1].className='active';
+        pnote.hidden=false; pnote.innerHTML='Preparing the in-browser model. The first run downloads it, then it is cached.';
+        var modelId = await resolveModelId((document.getElementById('bmodel')||{}).value||'llama-3.2-3b-instruct|q4f16');
+        var engine = await ensureEngine(modelId, function(r){
+          var pct = r && typeof r.progress==='number' ? Math.round(r.progress*100) : null;
+          pnote.innerHTML = 'Loading model'+(pct!=null?(' '+pct+'%'):'')+'. '+esc((r&&r.text)||'');
+        });
+        steps[1].className='done'; steps[1].setAttribute('data-sub','model ready'); setSub(steps[1]);
+
+        steps[2].className='active';
+        pnote.innerHTML='Reading the code and checking it against what the skill promises.';
+        j = await analyze(engine, p.name, sk.combined);
+        steps[2].className='done'; setSub(steps[2]);
+      }
+
+      steps[3].className='active';
+      var built = buildLiveSkill(p.name, j);
+      steps[3].className='done'; setSub(steps[3]);
+
+      steps[4].className='active';
+      window.__setLiveSkill(built.key, built.skill, built.cats, built.fine);
+      steps[4].className='done'; setSub(steps[4]);
+
+      scanned=built.key; pnote.hidden=true;
+      pok.textContent='✓ Done. '+built.skill.findings.length+' things worth a look.';
+      foot.classList.add('show');
+    }catch(err){
+      pnote.hidden=false;
+      pnote.innerHTML='<b>Could not finish that scan.</b> '+esc(err&&err.message?err.message:String(err));
+      foot.classList.remove('show');
+    }
+    running=false;
+  }
+
+  function run(){
+    if(running) return;
+    var raw = (document.getElementById('scanUrl').value||'').trim().replace(/\/+$/,'');
+    var mode = currentMode();
+    prog.hidden=false; prog.scrollIntoView({behavior:'smooth', block:'nearest'}); reset();
+    var key = resolveSkill(raw);
+    if(key){ runBaked(key); return; }                       // known example, instant
+    if(!raw){ progName.textContent='—'; note('Paste a GitHub link to a skill, or click an example above to see a real Privacy Card.'); return; }
+    progName.textContent = (raw.split('/').pop()||raw);
+    if(mode==='local'){ note('The "on your machine" option runs the scan locally and prints your Privacy Card in the terminal. Follow the commands below.'); return; }
+    runLive(raw, mode);                                     // browser (WebGPU) or key (OpenAI/Anthropic) — real scan
+  }
+
+  btn.addEventListener('click', function(e){ e.preventDefault(); run(); });
+  drop.addEventListener('click', run);
+
+  var openCard = document.getElementById('openCard');
+  openCard.addEventListener('click', function(e){
+    e.preventDefault();
+    if(window.__openCard) window.__openCard(scanned);
+  });
+
+  // run-mode chooser: pick browser / key / local, show the matching panel
+  var modeOpts = document.getElementById('modeOpts');
+  if(modeOpts){
+    var panels = Array.prototype.slice.call(document.querySelectorAll('.mode-panel'));
+    modeOpts.addEventListener('click', function(e){
+      var card = e.target.closest('.mode'); if(!card) return;
+      Array.prototype.slice.call(modeOpts.children).forEach(function(c){ c.classList.toggle('sel', c===card); });
+      var m = card.getAttribute('data-mode');
+      panels.forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-for')===m); });
+    });
+  }
+})();
+</script>
+
+<script>
+  /* Copy button in the local-run terminal: strips the "$ " prompts so the
+     commands paste and run cleanly, keeps the comments for readability. */
+  (function(){
+    var term=document.querySelector('.term');
+    if(!term) return;
+    var btn=term.querySelector('.copy'), pre=term.querySelector('pre');
+    if(!btn||!pre) return;
+    function fallback(text){
+      var ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+    }
+    btn.addEventListener('click',function(){
+      var text=pre.textContent.split('\n').map(function(l){
+        return l.replace(/^\s*\$\s/,'');
+      }).join('\n').replace(/\n{3,}/g,'\n\n').trim()+'\n';
+      function done(){
+        btn.textContent='Copied ✓'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('done'); },1600);
+      }
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(done,function(){ fallback(text); done(); });
+      } else { fallback(text); done(); }
+    });
+  })();
+</script>
+
+<script type="module">
+  /* WebLLM runs the model on WebGPU, fully in the browser. Loaded lazily so the
+     page stays light until someone actually starts a browser-mode scan. */
+  window.__loadWebLLM = async function(){
+    if(window.__webllm) return window.__webllm;
+    window.__webllm = await import("https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm/+esm");
+    return window.__webllm;
+  };
 </script>
 
 </body>
