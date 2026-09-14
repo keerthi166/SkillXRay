@@ -204,7 +204,7 @@ section{padding:62px 0}
 .csel{position:relative;display:inline-block}
 .csel-trigger{display:flex;align-items:center;gap:7px;padding:9px 10px;
   font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;
-  background:var(--bg);color:var(--ink);cursor:pointer;user-select:none;min-width:260px;width:260px}
+  background:var(--bg);color:var(--ink);cursor:pointer;user-select:none;min-width:320px;width:320px}
 .csel:focus>.csel-trigger,.csel-trigger:focus{border-color:var(--brand);outline:none}
 .csel[aria-expanded="true"]>.csel-trigger{border-color:var(--brand);border-radius:9px 9px 0 0}
 .csel-arrow{margin-left:auto;flex:none;color:var(--muted);transition:transform .15s}
@@ -1867,7 +1867,7 @@ var LOOKS_FINE = {
       var sz = optEl.getAttribute('data-size') || '';
       row.innerHTML =
         '<span class="csel-opt-logo">'+logoSVG(brand)+'</span>'
-        +'<span class="csel-opt-name">'+escEl(optEl.textContent)+'</span>'
+        +'<span class="csel-opt-name">'+escEl(optEl.textContent.trim())+'</span>'
         +(sz ? '<span class="csel-opt-size">'+escEl(sz)+'</span>' : '');
       if(!optEl.disabled){
         row.addEventListener('mousedown', function(e){ e.preventDefault(); selectOpt(optEl); close(); });
@@ -1882,7 +1882,7 @@ var LOOKS_FINE = {
       var sel = bmodelEl.options[bmodelEl.selectedIndex];
       if(!sel) return;
       trigLogo.innerHTML = logoSVG(sel.getAttribute('data-brand')||'');
-      trigLabel.textContent = sel.textContent;
+      trigLabel.textContent = sel.textContent.trim();
     }
 
     function selectOpt(optEl){
