@@ -557,7 +557,7 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
               <option value="google">Gemini (Google)</option>
               <option value="custom">Custom (OpenAI-compatible)</option>
             </select>
-            <input type="url" id="baseUrl" placeholder="Base URL (e.g. http://localhost:11434)" autocomplete="off" spellcheck="false" hidden>
+            <input type="url" id="baseUrl" placeholder="Base URL — with or without /v1 (e.g. http://localhost:11434)" autocomplete="off" spellcheck="false" hidden>
             <input type="password" id="apiKey" placeholder="Paste your API key" autocomplete="off" spellcheck="false">
             <input type="text" id="apiModel" placeholder="Model (optional, e.g. gpt-4o, claude-opus-4, gemini-2.5-pro)" autocomplete="off" spellcheck="false">
           </div>
@@ -1410,7 +1410,7 @@ var LOOKS_FINE = {
         var parts = cand && cand.content && cand.content.parts;
         return (parts||[]).map(function(p){ return p.text||''; }).join('') || '';
       } else if(provider==='custom'){
-        var base = (baseUrl||'').replace(/\/+$/,'');
+        var base = (baseUrl||'').replace(/\/+$/,'').replace(/\/v1$/,'');
         var hdrs = {'content-type':'application/json'};
         if(key){ hdrs['authorization'] = 'Bearer '+key; hdrs['rits_api_key'] = key; }
         var d4 = await postJSON(base+'/v1/chat/completions', hdrs, {
