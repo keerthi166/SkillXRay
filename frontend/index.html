@@ -500,6 +500,9 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
                 <option value="Llama-3.1-8B-Instruct|q4f16" data-size="~4.9 GB">Llama 3.1 8B</option>
                 <option value="Qwen2.5-7B-Instruct|q4f16" data-size="~4.4 GB">Qwen2.5 7B</option>
               </optgroup>
+              <optgroup label="Built into Chrome" id="chromeOptgroup">
+                <option value="chrome:nano" data-size="already on device" disabled id="chromeNanoOpt">Gemini Nano — Chrome 138+ only</option>
+              </optgroup>
             </select>
             <span id="bmodelSize" style="font-size:12px;color:var(--muted);margin-left:6px"></span>
           </div>
@@ -1200,8 +1203,9 @@ var LOOKS_FINE = {
 
   var engineCache={};
 
-  // Values starting with "txjs:" use Transformers.js (Granite etc.); everything else uses WebLLM.
+  // Values starting with "txjs:" use Transformers.js; "chrome:" use Chrome's built-in LanguageModel API.
   function isTxjs(sel){ return String(sel||'').indexOf('txjs:')===0; }
+  function isChromeNano(sel){ return String(sel||'').indexOf('chrome:')===0; }
 
   // WebLLM: pick the best full-context build from the prebuilt registry.
   // WebLLM ships a low-memory "-1k" build of each small model whose context window is only
@@ -1270,6 +1274,39 @@ var LOOKS_FINE = {
         do_sample: false,
         streamer: streamer
       });
+      return out;
+    };
+  }
+
+  // Chrome built-in Gemini Nano via the LanguageModel API (Chrome 138+, no key needed).
+  var chromeNanoSession = null;
+  async function ensureChromeNanoSession(onProgress){
+    if(chromeNanoSession) return chromeNanoSession;
+    if(!('LanguageModel' in window)) throw new Error('Chrome\'s built-in AI is not available in this browser. Try Chrome 138+ on desktop.');
+    var avail = await LanguageModel.availability();
+    if(avail === 'unavailable') throw new Error('Chrome\'s built-in Gemini Nano is not available on this device. It requires 22 GB free disk space and a GPU with 4 GB VRAM or 16 GB RAM.');
+    chromeNanoSession = await LanguageModel.create({
+      monitor: function(m){
+        m.addEventListener('downloadprogress', function(e){
+          if(onProgress) onProgress(Math.round((e.loaded||0)*100));
+        });
+      }
+    });
+    return chromeNanoSession;
+  }
+  function chromeNanoChat(session, onTick){
+    return async function(sys, user, opts){
+      var prompt = sys + '\n\n' + user;
+      var stream = session.promptStreaming(prompt);
+      var out = '', n = 0, prev = '';
+      for await (var chunk of stream){
+        // promptStreaming yields the full accumulated text each chunk; take the new delta
+        out = chunk;
+        var delta = chunk.slice(prev.length);
+        prev = chunk;
+        n += delta.length;
+        if(onTick && (n % 40 === 0)) onTick(Math.round(n/4));
+      }
       return out;
     };
   }
@@ -1494,6 +1531,33 @@ var LOOKS_FINE = {
           chat = transformersChat(generator, function(n){
             pnote.innerHTML = esc(bMsg)+' <span style="opacity:.6">('+n+' tokens…)</span>';
           });
+        } else if(isChromeNano(bmodelSel)){
+          pnote.hidden=false; pnote.innerHTML='Checking Chrome\'s built-in model…';
+          var cnAvail = ('LanguageModel' in window) ? await LanguageModel.availability() : 'unavailable';
+          if(cnAvail === 'unavailable'){
+            pnote.hidden=false; pnote.innerHTML='Gemini Nano is not available on this device. It requires Chrome 138+, 22 GB free disk, and 4 GB GPU VRAM or 16 GB RAM.';
+            steps[1].className='done'; steps[1].setAttribute('data-sub','unavailable'); setSub(steps[1]);
+            return;
+          }
+          var cnReady = (cnAvail !== 'downloading');
+          if(!cnReady){
+            pnote.hidden=false;
+            pnote.innerHTML='Gemini Nano is downloading — Chrome will finish this in the background.'
+              + '<div class="dl-bar-wrap"><div class="dl-bar" id="cnBar" style="width:0%"></div></div>';
+          }
+          var session = await ensureChromeNanoSession(function(pct){
+            var bar = document.getElementById('cnBar');
+            if(bar) bar.style.width = pct+'%';
+            pnote.innerHTML = 'Downloading Gemini Nano — '+pct+'%'
+              + '<div class="dl-bar-wrap"><div class="dl-bar" style="width:'+pct+'%"></div></div>';
+          });
+          steps[1].className='done'; steps[1].setAttribute('data-sub', cnReady ? 'built-in, ready' : 'downloaded'); setSub(steps[1]);
+          steps[2].className='active';
+          var bMsg='Reading the code and checking it against what the skill promises.';
+          pnote.innerHTML=esc(bMsg);
+          chat = chromeNanoChat(session, function(n){
+            pnote.innerHTML = esc(bMsg)+' <span style="opacity:.6">('+n+' tokens…)</span>';
+          });
         } else {
           var modelId = await resolveWebLLMId(bmodelSel);
           var engine = await ensureWebLLMEngine(modelId, function(r){
@@ -1668,11 +1732,38 @@ var LOOKS_FINE = {
     var opt = bmodelEl.options[bmodelEl.selectedIndex];
     var sz = opt && opt.getAttribute('data-size');
     var val = opt && opt.value || '';
+    if(isChromeNano(val)){
+      bmodelSizeEl.textContent = 'built into Chrome, no download needed';
+      bmodelSizeEl.style.color = 'var(--brand-ink)';
+      return;
+    }
     var cached = val && engineCache && engineCache['txjs:'+val.slice('txjs:'.length).split(':')[0]];
     bmodelSizeEl.textContent = cached ? 'cached ✓' : (sz ? sz+', downloads once' : '');
     bmodelSizeEl.style.color = cached ? 'var(--brand-ink)' : 'var(--muted)';
   }
   if(bmodelEl){ bmodelEl.addEventListener('change', updateModelSizeHint); updateModelSizeHint(); }
+
+  // Chrome built-in availability check: enable/disable the Gemini Nano option at page load.
+  (function(){
+    var opt = document.getElementById('chromeNanoOpt');
+    if(!opt) return;
+    if(!('LanguageModel' in window)){
+      opt.textContent = 'Gemini Nano — Chrome 138+ only (not available)';
+      opt.style.color = 'var(--muted)';
+      return;
+    }
+    LanguageModel.availability().then(function(avail){
+      if(avail === 'unavailable'){
+        opt.textContent = 'Gemini Nano — hardware requirement not met';
+        opt.style.color = 'var(--muted)';
+      } else {
+        opt.disabled = false;
+        opt.textContent = avail === 'downloading'
+          ? 'Gemini Nano (Chrome, downloading…)'
+          : 'Gemini Nano (Chrome, ready)';
+      }
+    }).catch(function(){ /* leave disabled */ });
+  })();
 })();
 </script>
 
