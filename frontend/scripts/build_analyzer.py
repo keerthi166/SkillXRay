@@ -537,10 +537,18 @@ async function analyze(chat, meta, opts){
   var skillSlug = slug(meta.name);
   var sections = buildSections(files);
   var moves = [];
-  for(var i=0;i<sections.length;i++){
-    say('Reading '+(sections.length>1?('part '+(i+1)+' of '+sections.length):'the code')+' for data moves…');
-    var mv = await extractSection(chat, meta, sections[i], opts);   /* sequential: WebLLM-engine-safe */
-    moves = moves.concat(mv);
+  if(browser){
+    /* Sequential: WebLLM runs on a single in-browser GPU engine — concurrent calls would queue or crash it. */
+    for(var i=0;i<sections.length;i++){
+      say('Reading '+(sections.length>1?('part '+(i+1)+' of '+sections.length):'the code')+' for data moves…');
+      var mv = await extractSection(chat, meta, sections[i], opts);
+      moves = moves.concat(mv);
+    }
+  } else {
+    /* Parallel: remote API endpoints handle concurrent requests fine — fire all sections at once. */
+    say('Reading '+(sections.length>1?(sections.length+' sections'):'the code')+' for data moves…');
+    var results = await Promise.all(sections.map(function(s){ return extractSection(chat, meta, s, opts); }));
+    results.forEach(function(mv){ moves = moves.concat(mv); });
   }
   renumber(moves, skillSlug);
   if(!moves.length){
