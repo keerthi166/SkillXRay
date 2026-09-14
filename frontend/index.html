@@ -1439,8 +1439,17 @@ var LOOKS_FINE = {
         var apiModel = (((document.getElementById('apiModel')||{}).value)||'').trim();
         j = await window.SkillXray.analyze(apiChat(provider, key, apiModel, baseUrl),
               {name:p.name, files:sk.files, combined:sk.combined},
-              {onPhase:function(m){ phaseMsg=m; pnote.innerHTML=esc(m); }});
+              {onPhase:function(m){
+                phaseMsg=m; pnote.innerHTML=esc(m);
+                var mTotal = m.match(/^Checking (\d+) data move/);
+                if(mTotal){
+                  var n=parseInt(mTotal[1],10);
+                  steps[2].className='done'; steps[2].setAttribute('data-sub', n+' move'+(n!==1?'s':'')+' found'); setSub(steps[2]);
+                  steps[3].className='active';
+                }
+              }});
         steps[2].className='done'; setSub(steps[2]);
+        steps[3].className='done'; setSub(steps[3]);
       } else {
         steps[1].className='active';
         var bmodelSel = (document.getElementById('bmodel')||{}).value || 'txjs:onnx-community/granite-4.0-1b-ONNX-web:q4';
@@ -1499,10 +1508,41 @@ var LOOKS_FINE = {
             pnote.innerHTML = esc(bMsg)+' <span style="opacity:.6">('+n+' tokens…)</span>';
           });
         }
+        var judgeTotal=0, judgeDone=0;
+        var judgeBatchStart=1;
+        function renderJudgeBar(){
+          var pct = judgeTotal>0 ? Math.round(judgeDone/judgeTotal*100) : 0;
+          var label = judgeTotal>0
+            ? 'Checking moves '+judgeBatchStart+'–'+judgeDone+' of '+judgeTotal
+            : esc(bMsg);
+          pnote.hidden=false;
+          pnote.innerHTML = label
+            + '<div class="dl-bar-wrap"><div class="dl-bar" style="width:'+pct+'%"></div></div>';
+        }
         j = await window.SkillXray.analyze(chat,
               {name:p.name, files:sk.files, combined:sk.combined},
-              {budget:'browser', onPhase:function(m){ bMsg=m; pnote.innerHTML=esc(m); }});
+              {budget:'browser', onPhase:function(m){
+                bMsg=m;
+                /* "Checking 18 data moves against…" — transition step 2→3 */
+                var mTotal = m.match(/^Checking (\d+) data move/);
+                if(mTotal){
+                  judgeTotal = parseInt(mTotal[1],10); judgeDone=0;
+                  steps[2].className='done'; steps[2].setAttribute('data-sub', judgeTotal+' move'+(judgeTotal!==1?'s':'')+' found'); setSub(steps[2]);
+                  steps[3].className='active';
+                  renderJudgeBar(); return;
+                }
+                /* "Checking moves 1–6 of 18…" — batch progress */
+                var mBatch = m.match(/^Checking moves? (\d+)[^\d]+(\d+) of (\d+)/);
+                if(mBatch){
+                  judgeBatchStart = parseInt(mBatch[1],10);
+                  judgeDone = parseInt(mBatch[2],10);
+                  judgeTotal = parseInt(mBatch[3],10);
+                  renderJudgeBar(); return;
+                }
+                pnote.hidden=false; pnote.innerHTML=esc(m);
+              }});
         steps[2].className='done'; setSub(steps[2]);
+        steps[3].className='done'; setSub(steps[3]);
       }
 
       steps[4].className='active';
