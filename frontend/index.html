@@ -233,7 +233,7 @@ section{padding:62px 0}
 .card{background:linear-gradient(180deg,#f3fafb 0%,#e9f5f6 100%);
   border:1px solid #cfe7ea;border-radius:16px;overflow:hidden;
   box-shadow:0 1px 2px rgba(16,30,28,.05), 0 20px 46px rgba(14,120,130,.10)}
-.card .top{padding:16px 22px;border-bottom:1px solid #d7ebee;
+.card .top{padding:16px 22px;border-bottom:1px solid #d7ebee;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
   display:flex;align-items:center;justify-content:space-between;gap:12px}
 /* "what it says vs what it does" folded into the top of the card */
 .pc-lead{padding:20px 22px;border-bottom:1px solid #d7ebee}
@@ -245,6 +245,12 @@ section{padding:62px 0}
 .card .top .t{font-family:Fraunces,serif;font-size:20px;font-weight:580}
 .card .top .tag{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:500;color:var(--brand-ink);
   background:var(--brand-soft);padding:5px 11px;border-radius:100px}
+.card .top .card-share{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.card .top .card-share .share-feedback{font-size:12px;color:var(--brand-ink);font-weight:600;opacity:0;transition:opacity .4s}
+.card .top .card-share .share-feedback.vis{opacity:1}
+.card .top .sbtn{font-size:12.5px;padding:5px 12px;border-radius:100px;border:1.5px solid var(--brand);
+  background:transparent;color:var(--brand-ink);font-weight:600;cursor:pointer;font-family:inherit}
+.card .top .sbtn:hover{background:var(--brand-soft)}
 .crow2{padding:14px 22px;border-bottom:1px solid #d7ebee}
 .crow2 .k{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .crow2 .v{font-size:16px;margin-top:3px}
@@ -916,8 +922,16 @@ var LOOKS_FINE = {
       + (s.source ? ' &middot; source: '+esc(s.source) : '')
       + ' &middot; by SkillXray</div>';
 
+    var isLive = !!(DATA_CATS[key] !== undefined && window.__shareEncode);
+    var shareBar = isLive
+      ? '<div class="card-share">'
+          +'<button class="sbtn" data-share="copy">Copy link</button>'
+          +'<button class="sbtn" data-share="short">Short link</button>'
+          +'<span class="share-feedback"></span>'
+        +'</div>'
+      : '';
     mount.innerHTML=
-      '<div class="top"><span class="t">Privacy Card</span><span class="tag">'+esc(s.tag||key)+'</span></div>'
+      '<div class="top"><span class="t">Privacy Card</span><span class="tag">'+esc(s.tag||key)+'</span>'+shareBar+'</div>'
       +lead
       +riskBanner
       +findingsBlock
@@ -934,6 +948,51 @@ var LOOKS_FINE = {
         body.hidden=open;
       });
     });
+
+    // share buttons on the card header
+    if(isLive){
+      var feedback = mount.querySelector('.share-feedback');
+      var feedTimer = null;
+      function cardShowNote(msg, isErr){
+        feedback.textContent = msg;
+        feedback.style.color = isErr ? 'var(--amber,#c97000)' : 'var(--brand-ink)';
+        feedback.classList.add('vis');
+        clearTimeout(feedTimer);
+        feedTimer = setTimeout(function(){ feedback.classList.remove('vis'); }, 2800);
+      }
+      function cardCopy(text, ok){
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(text).then(function(){ cardShowNote(ok); }, function(){ cardFallback(text, ok); });
+        } else { cardFallback(text, ok); }
+      }
+      function cardFallback(text, ok){
+        var ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        try{ document.execCommand('copy'); cardShowNote(ok); }catch(e){ cardShowNote('Could not copy.', true); }
+        document.body.removeChild(ta);
+      }
+      Array.prototype.forEach.call(mount.querySelectorAll('.sbtn[data-share]'), function(btn){
+        btn.addEventListener('click', function(){
+          var d = { key:key, skill:SKILLS[key], cats:DATA_CATS[key]||[], fine:LOOKS_FINE[key]||[] };
+          if(btn.getAttribute('data-share')==='copy'){
+            var encoded = window.__shareEncode(d.key, d.skill, d.cats, d.fine);
+            cardCopy(location.origin+location.pathname+'#share='+encoded, 'Link copied!');
+          } else {
+            if(!confirm('This creates a permanent, public GitHub Gist containing the scan findings — including any code snippets. It cannot be deleted after posting.\n\nContinue?')) return;
+            btn.textContent='Getting link…'; btn.disabled=true;
+            fetch('https://api.github.com/gists',{
+              method:'POST',
+              headers:{'content-type':'application/json','accept':'application/vnd.github+json'},
+              body:JSON.stringify({description:'SkillXray Privacy Card — '+(SKILLS[key].tag||key), public:true,
+                files:{'skillxray-card.json':{content:JSON.stringify(d)}}})
+            }).then(function(r){ if(!r.ok) throw new Error('GitHub API error '+r.status); return r.json(); })
+              .then(function(g){ cardCopy(location.origin+location.pathname+'#gist='+g.id, 'Short link copied!'); })
+              .catch(function(){ cardShowNote('Could not create short link — try Copy link instead.', true); })
+              .finally(function(){ btn.textContent='Short link'; btn.disabled=false; });
+          }
+        });
+      });
+    }
   }
 
   var isNarrow=window.matchMedia('(max-width:760px)');
