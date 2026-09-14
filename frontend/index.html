@@ -1412,7 +1412,7 @@ var LOOKS_FINE = {
       } else if(provider==='custom'){
         var base = (baseUrl||'').replace(/\/+$/,'');
         var hdrs = {'content-type':'application/json'};
-        if(key){ hdrs['authorization'] = 'Bearer '+key; hdrs['ibm-api-key'] = key; }
+        if(key){ hdrs['authorization'] = 'Bearer '+key; hdrs['api-key'] = key; hdrs['ibm-api-key'] = key; }
         var d4 = await postJSON(base+'/v1/chat/completions', hdrs, {
           model: model||'default', temperature:0, max_tokens:mt,
           messages:[{role:'system', content:sys}, {role:'user', content:user}]
