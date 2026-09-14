@@ -484,11 +484,13 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
               <option value="openai">GPT (OpenAI)</option>
               <option value="anthropic">Claude (Anthropic)</option>
               <option value="google">Gemini (Google)</option>
+              <option value="custom">Custom (OpenAI-compatible)</option>
             </select>
+            <input type="url" id="baseUrl" placeholder="Base URL (e.g. http://localhost:11434)" autocomplete="off" spellcheck="false" hidden>
             <input type="password" id="apiKey" placeholder="Paste your API key" autocomplete="off" spellcheck="false">
             <input type="text" id="apiModel" placeholder="Model (optional, e.g. gpt-4o, claude-opus-4, gemini-2.5-pro)" autocomplete="off" spellcheck="false">
           </div>
-          <p class="scan-hint">The key travels over an encrypted connection, is used for this one scan, and is never saved. Because the scan runs on the vendor’s model, the skill’s code is sent there too. Leave Model blank for a sensible default, or name any model your key can use. Want nothing to leave your computer? Use the browser model, or run it on your machine.</p>
+          <p class="scan-hint" id="keyHint">The key travels over an encrypted connection, is used for this one scan, and is never saved. Because the scan runs on the vendor’s model, the skill’s code is sent there too. Leave Model blank for a sensible default, or name any model your key can use. Want nothing to leave your computer? Use the browser model, or run it on your machine.</p>
         </div>
         <div class="mode-panel" data-for="local">
           <p class="scan-hint">No key to paste here. You set that up on your own machine, in a <span style="font-family:'JetBrains Mono',monospace;font-size:13px">.env</span> file that stays there. <a href="#local">See the commands ↓</a></p>
@@ -1118,8 +1120,8 @@ var LOOKS_FINE = {
      user typed one it is honored, else a sensible default. No response_format:json_object
      (arrays; see above). The key and the skill's code go only to that vendor, for these calls,
      and are never stored. */
-  var PROVIDER_NAME = {openai:'OpenAI', anthropic:'Anthropic', google:'Google'};
-  function apiChat(provider, key, model){
+  var PROVIDER_NAME = {openai:'OpenAI', anthropic:'Anthropic', google:'Google', custom:'Custom'};
+  function apiChat(provider, key, model, baseUrl){
     return async function(sys, user, opts){
       var mt = (opts&&opts.maxTokens)||3000;
       if(provider==='anthropic'){
@@ -1146,6 +1148,15 @@ var LOOKS_FINE = {
         var cand = d3.candidates && d3.candidates[0];
         var parts = cand && cand.content && cand.content.parts;
         return (parts||[]).map(function(p){ return p.text||''; }).join('') || '';
+      } else if(provider==='custom'){
+        var base = (baseUrl||'').replace(/\/+$/,'');
+        var hdrs = {'content-type':'application/json'};
+        if(key) hdrs['authorization'] = 'Bearer '+key;
+        var d4 = await postJSON(base+'/v1/chat/completions', hdrs, {
+          model: model||'default', temperature:0, max_tokens:mt,
+          messages:[{role:'system', content:sys}, {role:'user', content:user}]
+        }, 'Custom');
+        return (d4.choices && d4.choices[0] && d4.choices[0].message.content) || '';
       } else {
         var d2 = await postJSON('https://api.openai.com/v1/chat/completions', {
           'content-type':'application/json',
@@ -1214,14 +1225,20 @@ var LOOKS_FINE = {
     steps[3].setAttribute('data-sub','labeled what goes further');
     steps[4].setAttribute('data-sub','done');
     try{
-      var provider=null, key=null;
+      var provider=null, key=null, baseUrl=null;
       if(mode==='key'){
         var pv = (((document.getElementById('provider')||{}).value)||'openai').toLowerCase();
         provider = (pv.indexOf('anthropic')>-1||pv.indexOf('claude')>-1) ? 'anthropic'
                  : (pv.indexOf('google')>-1||pv.indexOf('gemini')>-1) ? 'google'
+                 : pv==='custom' ? 'custom'
                  : 'openai';
         key = (((document.getElementById('apiKey')||{}).value)||'').trim();
-        if(!key) throw new Error('Paste your '+PROVIDER_NAME[provider]+' API key above, or switch to the free in-browser model.');
+        if(provider==='custom'){
+          baseUrl = (((document.getElementById('baseUrl')||{}).value)||'').trim();
+          if(!baseUrl) throw new Error('Enter a base URL for your custom endpoint.');
+        } else if(!key){
+          throw new Error('Paste your '+PROVIDER_NAME[provider]+' API key above, or switch to the free in-browser model.');
+        }
       } else if(!('gpu' in navigator)){
         throw new Error('This browser has no WebGPU, so the in-browser model cannot run. Try Chrome or Edge, use your API key, or run it on your machine with the commands below.');
       }
@@ -1244,7 +1261,7 @@ var LOOKS_FINE = {
         var phaseMsg='Reading the code and checking it against what the skill promises.';
         pnote.innerHTML=esc(phaseMsg);
         var apiModel = (((document.getElementById('apiModel')||{}).value)||'').trim();
-        j = await window.SkillXray.analyze(apiChat(provider, key, apiModel),
+        j = await window.SkillXray.analyze(apiChat(provider, key, apiModel, baseUrl),
               {name:p.name, files:sk.files, combined:sk.combined},
               {onPhase:function(m){ phaseMsg=m; pnote.innerHTML=esc(m); }});
         steps[2].className='done'; setSub(steps[2]);
@@ -1326,6 +1343,23 @@ var LOOKS_FINE = {
       panels.forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-for')===m); });
     });
   }
+
+  // custom provider: toggle base URL field and update hint text
+  var providerSel = document.getElementById('provider');
+  var baseUrlInput = document.getElementById('baseUrl');
+  var apiKeyInput  = document.getElementById('apiKey');
+  var apiModelInput = document.getElementById('apiModel');
+  var keyHint = document.getElementById('keyHint');
+  var HINT_DEFAULT = 'The key travels over an encrypted connection, is used for this one scan, and is never saved. Because the scan runs on the vendor\u2019s model, the skill\u2019s code is sent there too. Leave Model blank for a sensible default, or name any model your key can use. Want nothing to leave your computer? Use the browser model, or run it on your machine.';
+  var HINT_CUSTOM  = 'Point to any OpenAI-compatible endpoint — Ollama, LM Studio, vLLM, LiteLLM, and similar. Base URL is required (e.g. <code>http://localhost:11434</code>); API key is optional for local servers. Model name is required — there is no default for custom endpoints.';
+  function onProviderChange(){
+    var isCustom = providerSel && providerSel.value === 'custom';
+    if(baseUrlInput) baseUrlInput.hidden = !isCustom;
+    if(apiKeyInput)  apiKeyInput.placeholder = isCustom ? 'API key (optional for local servers)' : 'Paste your API key';
+    if(apiModelInput) apiModelInput.placeholder = isCustom ? 'Model (required, e.g. llama3, mistral)' : 'Model (optional, e.g. gpt-4o, claude-opus-4, gemini-2.5-pro)';
+    if(keyHint) keyHint.innerHTML = isCustom ? HINT_CUSTOM : HINT_DEFAULT;
+  }
+  if(providerSel){ providerSel.addEventListener('change', onProviderChange); onProviderChange(); }
 })();
 </script>
 
