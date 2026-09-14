@@ -204,7 +204,7 @@ section{padding:62px 0}
 .csel{position:relative;display:inline-block}
 .csel-trigger{display:flex;align-items:center;gap:7px;padding:9px 10px;
   font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;
-  background:var(--bg);color:var(--ink);cursor:pointer;user-select:none;min-width:200px}
+  background:var(--bg);color:var(--ink);cursor:pointer;user-select:none;min-width:260px;width:260px}
 .csel:focus>.csel-trigger,.csel-trigger:focus{border-color:var(--brand);outline:none}
 .csel[aria-expanded="true"]>.csel-trigger{border-color:var(--brand);border-radius:9px 9px 0 0}
 .csel-arrow{margin-left:auto;flex:none;color:var(--muted);transition:transform .15s}
@@ -1319,34 +1319,41 @@ var LOOKS_FINE = {
   }
 
   // Chrome built-in Gemini Nano via the LanguageModel API (Chrome 138+, no key needed).
-  var chromeNanoSession = null;
+  var chromeNanoReady = false;
   async function ensureChromeNanoSession(onProgress){
-    if(chromeNanoSession) return chromeNanoSession;
     if(!('LanguageModel' in window)) throw new Error('Chrome\'s built-in AI is not available in this browser. Try Chrome 138+ on desktop.');
     var avail = await LanguageModel.availability();
     if(avail === 'unavailable') throw new Error('Chrome\'s built-in Gemini Nano is not available on this device. It requires 22 GB free disk space and a GPU with 4 GB VRAM or 16 GB RAM.');
-    chromeNanoSession = await LanguageModel.create({
-      monitor: function(m){
-        m.addEventListener('downloadprogress', function(e){
-          if(onProgress) onProgress(Math.round((e.loaded||0)*100));
-        });
-      }
-    });
-    return chromeNanoSession;
+    if(!chromeNanoReady){
+      // Trigger download if needed, then mark ready. Actual sessions are created per-call with system prompts.
+      var warmup = await LanguageModel.create({
+        monitor: function(m){
+          m.addEventListener('downloadprogress', function(e){
+            if(onProgress) onProgress(Math.round((e.loaded||0)*100));
+          });
+        }
+      });
+      warmup.destroy();
+      chromeNanoReady = true;
+    }
+    return true;
   }
-  function chromeNanoChat(session, onTick){
+  function chromeNanoChat(onTick){
     return async function(sys, user, opts){
-      var prompt = sys + '\n\n' + user;
-      var stream = session.promptStreaming(prompt);
+      // Create a fresh session per call so the system prompt is applied correctly.
+      var session = await LanguageModel.create({
+        initialPrompts: [{role:'system', content:sys}]
+      });
+      var stream = session.promptStreaming(user);
       var out = '', n = 0, prev = '';
       for await (var chunk of stream){
-        // promptStreaming yields the full accumulated text each chunk; take the new delta
         out = chunk;
         var delta = chunk.slice(prev.length);
         prev = chunk;
         n += delta.length;
         if(onTick && (n % 40 === 0)) onTick(Math.round(n/4));
       }
+      session.destroy();
       return out;
     };
   }
@@ -1585,7 +1592,7 @@ var LOOKS_FINE = {
             pnote.innerHTML='Gemini Nano is downloading — Chrome will finish this in the background.'
               + '<div class="dl-bar-wrap"><div class="dl-bar" id="cnBar" style="width:0%"></div></div>';
           }
-          var session = await ensureChromeNanoSession(function(pct){
+          await ensureChromeNanoSession(function(pct){
             var bar = document.getElementById('cnBar');
             if(bar) bar.style.width = pct+'%';
             pnote.innerHTML = 'Downloading Gemini Nano — '+pct+'%'
@@ -1595,7 +1602,7 @@ var LOOKS_FINE = {
           steps[2].className='active';
           var bMsg='Reading the code and checking it against what the skill promises.';
           pnote.innerHTML=esc(bMsg);
-          chat = chromeNanoChat(session, function(n){
+          chat = chromeNanoChat(function(n){
             pnote.innerHTML = esc(bMsg)+' <span style="opacity:.6">('+n+' tokens…)</span>';
           });
         } else {
