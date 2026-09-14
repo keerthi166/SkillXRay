@@ -200,6 +200,29 @@ section{padding:62px 0}
 .brand-microsoft{background:#f0f4ff;color:#0078d4}
 .brand-alibaba{background:#fff2e6;color:#ff6a00}
 .brand-google{background:#fce8e6;color:#ea4335}
+/* custom model dropdown */
+.csel{position:relative;display:inline-block}
+.csel-trigger{display:flex;align-items:center;gap:7px;padding:9px 10px;
+  font:inherit;font-size:14px;border:1.5px solid var(--line);border-radius:9px;
+  background:var(--bg);color:var(--ink);cursor:pointer;user-select:none;min-width:200px}
+.csel:focus>.csel-trigger,.csel-trigger:focus{border-color:var(--brand);outline:none}
+.csel[aria-expanded="true"]>.csel-trigger{border-color:var(--brand);border-radius:9px 9px 0 0}
+.csel-arrow{margin-left:auto;flex:none;color:var(--muted);transition:transform .15s}
+.csel[aria-expanded="true"] .csel-arrow{transform:rotate(180deg)}
+.csel-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.csel-panel{position:absolute;top:100%;left:0;right:0;border:1.5px solid var(--brand);
+  border-top:none;border-radius:0 0 9px 9px;background:var(--bg);
+  box-shadow:0 8px 24px rgba(16,30,28,.10);z-index:200;max-height:320px;overflow-y:auto}
+.csel-group-label{padding:7px 12px 3px;font-size:11px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted)}
+.csel-opt{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;
+  font-size:14px;color:var(--ink)}
+.csel-opt:hover,.csel-opt.focused{background:var(--brand-soft)}
+.csel-opt.selected{background:var(--brand-soft);font-weight:600}
+.csel-opt.disabled{opacity:.45;cursor:default;pointer-events:none}
+.csel-opt-logo{flex:none;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.csel-opt-name{flex:1}
+.csel-opt-size{font-size:11px;color:var(--muted);white-space:nowrap}
 .progress .phead{display:flex;align-items:center;gap:10px;padding:13px 18px;
   background:var(--surface);border-bottom:1px solid var(--line);font-size:13.5px;font-weight:650}
 .progress .phead .nm{color:var(--muted);font-weight:500;font-family:"JetBrains Mono",monospace;font-size:12.5px}
@@ -491,30 +514,37 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
         <div class="mode-panel on" data-for="browser">
           <div class="keyrow">
             <label for="bmodel">Model</label>
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span id="bmodelBrand" style="flex:none"></span>
-              <select id="bmodel">
-                <optgroup label="Recommended">
-                  <option value="txjs:onnx-community/granite-4.0-1b-ONNX-web:q4" data-size="~550 MB" data-brand="ibm" selected>Granite 4.0 1B</option>
-                  <option value="txjs:onnx-community/granite-4.0-micro-ONNX-web:q4f16" data-size="~1.7 GB" data-brand="ibm">Granite 4.0 3B</option>
-                  <option value="txjs:onnx-community/granite-4.0-350m-ONNX-web:fp16" data-size="~700 MB" data-brand="ibm">Granite 4.0 350M (fastest)</option>
-                </optgroup>
-                <optgroup label="Other models">
-                  <option value="Llama-3.2-3B-Instruct|q4f16" data-size="~2 GB" data-brand="meta">Llama 3.2 3B</option>
-                  <option value="Qwen2.5-3B-Instruct|q4f16" data-size="~2 GB" data-brand="alibaba">Qwen2.5 3B</option>
-                  <option value="Phi-3.5-mini-instruct|q4f16" data-size="~2.2 GB" data-brand="microsoft">Phi-3.5 mini</option>
-                  <option value="Llama-3.2-1B-Instruct|q4f16" data-size="~850 MB" data-brand="meta">Llama 3.2 1B</option>
-                </optgroup>
-                <optgroup label="Stronger reader — needs ~6 GB GPU">
-                  <option value="Llama-3.1-8B-Instruct|q4f16" data-size="~4.9 GB" data-brand="meta">Llama 3.1 8B</option>
-                  <option value="Qwen2.5-7B-Instruct|q4f16" data-size="~4.4 GB" data-brand="alibaba">Qwen2.5 7B</option>
-                </optgroup>
-                <optgroup label="Built into Chrome" id="chromeOptgroup">
-                  <option value="chrome:nano" data-size="already on device" data-brand="google" disabled id="chromeNanoOpt">Gemini Nano — Chrome 138+ only</option>
-                </optgroup>
-              </select>
+            <!-- hidden native select keeps all existing JS working unchanged -->
+            <select id="bmodel" style="display:none">
+              <optgroup label="Recommended">
+                <option value="txjs:onnx-community/granite-4.0-1b-ONNX-web:q4" data-size="~550 MB" data-brand="ibm" selected>Granite 4.0 1B</option>
+                <option value="txjs:onnx-community/granite-4.0-micro-ONNX-web:q4f16" data-size="~1.7 GB" data-brand="ibm">Granite 4.0 3B</option>
+                <option value="txjs:onnx-community/granite-4.0-350m-ONNX-web:fp16" data-size="~700 MB" data-brand="ibm">Granite 4.0 350M (fastest)</option>
+              </optgroup>
+              <optgroup label="Other models">
+                <option value="Llama-3.2-3B-Instruct|q4f16" data-size="~2 GB" data-brand="meta">Llama 3.2 3B</option>
+                <option value="Qwen2.5-3B-Instruct|q4f16" data-size="~2 GB" data-brand="alibaba">Qwen2.5 3B</option>
+                <option value="Phi-3.5-mini-instruct|q4f16" data-size="~2.2 GB" data-brand="microsoft">Phi-3.5 mini</option>
+                <option value="Llama-3.2-1B-Instruct|q4f16" data-size="~850 MB" data-brand="meta">Llama 3.2 1B</option>
+              </optgroup>
+              <optgroup label="Stronger reader — needs ~6 GB GPU">
+                <option value="Llama-3.1-8B-Instruct|q4f16" data-size="~4.9 GB" data-brand="meta">Llama 3.1 8B</option>
+                <option value="Qwen2.5-7B-Instruct|q4f16" data-size="~4.4 GB" data-brand="alibaba">Qwen2.5 7B</option>
+              </optgroup>
+              <optgroup label="Built into Chrome" id="chromeOptgroup">
+                <option value="chrome:nano" data-size="already on device" data-brand="google" disabled id="chromeNanoOpt">Gemini Nano — Chrome 138+ only</option>
+              </optgroup>
+            </select>
+            <!-- custom dropdown rendered by JS below -->
+            <div id="bmodelDropdown" class="csel" role="combobox" aria-haspopup="listbox" aria-expanded="false" tabindex="0">
+              <div class="csel-trigger">
+                <span class="csel-logo"></span>
+                <span class="csel-label"></span>
+                <svg class="csel-arrow" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="csel-panel" role="listbox" hidden></div>
             </div>
-            <span id="bmodelSize" style="font-size:12px;color:var(--muted);margin-left:6px;margin-top:2px;display:block"></span>
+            <span id="bmodelSize" style="font-size:12px;color:var(--muted);margin-top:4px;display:block"></span>
           </div>
           <p class="scan-hint">Models download once and are cached — later scans are quick. <b>Granite 4.0</b> (IBM Research, recommended) is a strong reader for its size. Larger models catch more but run slower and need more GPU memory. Needs a browser with WebGPU such as Chrome or Edge. The skill’s files never leave your computer.</p>
         </div>
@@ -1737,8 +1767,6 @@ var LOOKS_FINE = {
   // Show download size next to the model selector on change
   var bmodelEl = document.getElementById('bmodel');
   var bmodelSizeEl = document.getElementById('bmodelSize');
-  var bmodelBrandEl = document.getElementById('bmodelBrand');
-
   var BRAND_LOGOS = {
     ibm: {
       label: 'IBM',
@@ -1772,13 +1800,6 @@ var LOOKS_FINE = {
     var opt = bmodelEl.options[bmodelEl.selectedIndex];
     var sz = opt && opt.getAttribute('data-size');
     var val = opt && opt.value || '';
-    var brand = opt && opt.getAttribute('data-brand');
-    var binfo = brand && BRAND_LOGOS[brand];
-    if(bmodelBrandEl){
-      bmodelBrandEl.innerHTML = binfo
-        ? '<span class="brand-badge '+binfo.cls+'">'+binfo.svg+'&nbsp;'+binfo.label+'</span>'
-        : '';
-    }
     if(isChromeNano(val)){
       bmodelSizeEl.textContent = 'built into Chrome, no download needed';
       bmodelSizeEl.style.color = 'var(--brand-ink)';
@@ -1790,25 +1811,159 @@ var LOOKS_FINE = {
   }
   if(bmodelEl){ bmodelEl.addEventListener('change', updateModelSizeHint); updateModelSizeHint(); }
 
+  // ---- Custom model dropdown ----
+  (function(){
+    var dd = document.getElementById('bmodelDropdown');
+    if(!dd || !bmodelEl) return;
+    var trigger = dd.querySelector('.csel-trigger');
+    var trigLogo = dd.querySelector('.csel-logo');
+    var trigLabel = dd.querySelector('.csel-label');
+    var panel = dd.querySelector('.csel-panel');
+    var focusedIdx = -1;
+    var items = []; // {el, optEl, idx}
+
+    function logoSVG(brand){
+      var b = BRAND_LOGOS[brand];
+      return b ? b.svg : '';
+    }
+
+    function buildPanel(){
+      panel.innerHTML = '';
+      items = [];
+      var allOpts = bmodelEl.options;
+      var groups = bmodelEl.querySelectorAll('optgroup');
+      var grouped = new Set();
+      groups.forEach(function(g){
+        var gl = document.createElement('div');
+        gl.className = 'csel-group-label';
+        gl.textContent = g.label;
+        panel.appendChild(gl);
+        Array.prototype.forEach.call(g.children, function(o){
+          grouped.add(o);
+          var row = makeRow(o);
+          panel.appendChild(row);
+        });
+      });
+      // ungrouped options
+      Array.prototype.forEach.call(allOpts, function(o){
+        if(!grouped.has(o)){
+          var row = makeRow(o);
+          panel.appendChild(row);
+        }
+      });
+    }
+
+    function makeRow(optEl){
+      var row = document.createElement('div');
+      row.className = 'csel-opt' + (optEl.disabled ? ' disabled' : '') + (optEl.selected ? ' selected' : '');
+      var brand = optEl.getAttribute('data-brand') || '';
+      var sz = optEl.getAttribute('data-size') || '';
+      row.innerHTML =
+        '<span class="csel-opt-logo">'+logoSVG(brand)+'</span>'
+        +'<span class="csel-opt-name">'+escEl(optEl.textContent)+'</span>'
+        +(sz ? '<span class="csel-opt-size">'+escEl(sz)+'</span>' : '');
+      if(!optEl.disabled){
+        row.addEventListener('mousedown', function(e){ e.preventDefault(); selectOpt(optEl); close(); });
+      }
+      items.push({el: row, optEl: optEl});
+      return row;
+    }
+
+    function escEl(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+    function syncTrigger(){
+      var sel = bmodelEl.options[bmodelEl.selectedIndex];
+      if(!sel) return;
+      trigLogo.innerHTML = logoSVG(sel.getAttribute('data-brand')||'');
+      trigLabel.textContent = sel.textContent;
+    }
+
+    function selectOpt(optEl){
+      bmodelEl.value = optEl.value;
+      var evt = document.createEvent('Event');
+      evt.initEvent('change', true, true);
+      bmodelEl.dispatchEvent(evt);
+      syncTrigger();
+      // update selected class
+      items.forEach(function(it){ it.el.classList.toggle('selected', it.optEl === optEl); });
+    }
+
+    function open(){
+      panel.hidden = false;
+      dd.setAttribute('aria-expanded','true');
+      // mark focused on selected
+      focusedIdx = -1;
+      items.forEach(function(it,i){
+        it.el.classList.remove('focused');
+        if(it.optEl.selected && !it.optEl.disabled){ focusedIdx = i; it.el.classList.add('focused'); }
+      });
+    }
+    function close(){
+      panel.hidden = true;
+      dd.setAttribute('aria-expanded','false');
+      dd.focus();
+    }
+
+    dd.addEventListener('mousedown', function(e){
+      if(panel.contains(e.target)) return;
+      e.preventDefault();
+      if(panel.hidden) open(); else close();
+    });
+    document.addEventListener('mousedown', function(e){
+      if(!dd.contains(e.target)) close();
+    });
+    dd.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        if(panel.hidden) open(); else {
+          if(focusedIdx>=0 && items[focusedIdx] && !items[focusedIdx].optEl.disabled)
+            selectOpt(items[focusedIdx].optEl);
+          close();
+        }
+      } else if(e.key === 'Escape'){ close(); }
+      else if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+        e.preventDefault();
+        if(panel.hidden){ open(); return; }
+        var dir = e.key==='ArrowDown' ? 1 : -1;
+        var next = focusedIdx;
+        for(var i=0;i<items.length;i++){
+          next = (next + dir + items.length) % items.length;
+          if(!items[next].optEl.disabled){ break; }
+        }
+        if(focusedIdx>=0) items[focusedIdx].el.classList.remove('focused');
+        focusedIdx = next;
+        items[focusedIdx].el.classList.add('focused');
+        items[focusedIdx].el.scrollIntoView({block:'nearest'});
+      }
+    });
+
+    buildPanel();
+    syncTrigger();
+    // rebuild when Chrome Nano option label updates
+    bmodelEl.addEventListener('change', function(){ syncTrigger(); updateModelSizeHint(); });
+    // expose rebuilder for Chrome Nano availability update
+    window.__rebuildModelDropdown = function(){ buildPanel(); syncTrigger(); };
+  })();
+
   // Chrome built-in availability check: enable/disable the Gemini Nano option at page load.
   (function(){
     var opt = document.getElementById('chromeNanoOpt');
     if(!opt) return;
     if(!('LanguageModel' in window)){
-      opt.textContent = 'Gemini Nano — Chrome 138+ only (not available)';
-      opt.style.color = 'var(--muted)';
+      opt.textContent = 'Gemini Nano — not available (Chrome 138+ required)';
+      if(window.__rebuildModelDropdown) window.__rebuildModelDropdown();
       return;
     }
     LanguageModel.availability().then(function(avail){
       if(avail === 'unavailable'){
         opt.textContent = 'Gemini Nano — hardware requirement not met';
-        opt.style.color = 'var(--muted)';
       } else {
         opt.disabled = false;
         opt.textContent = avail === 'downloading'
           ? 'Gemini Nano (Chrome, downloading…)'
           : 'Gemini Nano (Chrome, ready)';
       }
+      if(window.__rebuildModelDropdown) window.__rebuildModelDropdown();
     }).catch(function(){ /* leave disabled */ });
   })();
 })();
