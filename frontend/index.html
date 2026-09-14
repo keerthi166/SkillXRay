@@ -921,7 +921,7 @@ var LOOKS_FINE = {
     var shareBar = isLive
       ? '<div class="card-share">'
           +'<button class="sbtn" data-share="copy">Copy link</button>'
-          +'<button class="sbtn" data-share="img">Save image</button>'
+          +'<button class="sbtn" data-share="img">Save card</button>'
           +'<span class="share-feedback"></span>'
         +'</div>'
       : '';
@@ -985,7 +985,7 @@ var LOOKS_FINE = {
                 logging: false
               }).then(function(canvas){
                 if(shareEl) shareEl.style.visibility = '';
-                btn.textContent = 'Save image';
+                btn.textContent = 'Save card';
                 btn.disabled = false;
                 canvas.toBlob(function(blob){
                   var a = document.createElement('a');
@@ -996,7 +996,7 @@ var LOOKS_FINE = {
                 }, 'image/png');
               }).catch(function(){
                 if(shareEl) shareEl.style.visibility = '';
-                btn.textContent = 'Save image';
+                btn.textContent = 'Save card';
                 btn.disabled = false;
                 cardShowNote('Could not capture image.', true);
               });
@@ -1009,7 +1009,7 @@ var LOOKS_FINE = {
               s.onload = function(){ doCapture(window.html2canvas); };
               s.onerror = function(){
                 if(shareEl) shareEl.style.visibility = '';
-                btn.textContent = 'Save image';
+                btn.textContent = 'Save card';
                 btn.disabled = false;
                 cardShowNote('Could not load image library.', true);
               };
