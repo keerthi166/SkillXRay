@@ -19,6 +19,7 @@
   --ink:#1b2422; --muted:#697370; --line:#e6ebea;
   --brand:#0e9aab; --brand-ink:#0a6b78; --brand-soft:#e6f6f8; --brand-bright:#52dee5;
   --amber:#f0a828; --amber-soft:#fdf3e2; --amber-ink:#8a5a06;
+  --danger:#d64541; --danger-soft:#fbecea; --danger-ink:#9a2620;
   --code-bg:#f2f6f6;
   --term-bg:#12201f; --term-ink:#d7e6e2; --term-dim:#7f948f; --term-cyan:#5fd8e0; --term-green:#7fd6a0;
   /* validated 8-hue set, softened a step lighter */
@@ -236,6 +237,37 @@ section{padding:62px 0}
 .crow2 .v{font-size:16px;margin-top:3px}
 .crow2.watch{background:var(--amber-soft)}
 .crow2.watch .k{color:var(--amber-ink)}
+.crow2.clear{background:var(--brand-soft)}
+.crow2.clear .k{color:var(--brand-ink)}
+/* risk headline — the "how bad is it?" banner, color-coded by severity */
+.risk{padding:16px 22px;border-bottom:1px solid var(--line)}
+.risk-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.risk-badge{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:12.5px;
+  letter-spacing:.05em;text-transform:uppercase;padding:5px 12px;border-radius:100px}
+.risk-count{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:500;color:var(--muted)}
+.risk-sum{font-size:15.5px;margin:0}
+.risk.high{background:var(--danger-soft)}
+.risk.high .risk-badge{background:var(--danger);color:#fff}
+.risk.high .risk-sum{color:var(--danger-ink)}
+.risk.med{background:var(--amber-soft)}
+.risk.med .risk-badge{background:var(--amber);color:#3a2905}
+.risk.med .risk-sum{color:var(--amber-ink)}
+.risk.clear{background:var(--brand-soft)}
+.risk.clear .risk-badge{background:var(--brand);color:#fff}
+.risk.clear .risk-sum{color:var(--brand-ink)}
+/* inconclusive — a failed/empty read: neutral slate, never mistaken for a pass */
+.risk.inconc{background:#f1f3f5;border:1px dashed #c4ccd2}
+.risk.inconc .risk-badge{background:#5b6770;color:#fff}
+.risk.inconc .risk-sum{color:#3f484e}
+/* what you can do — actionable next steps */
+.pc-do{padding:15px 22px;border-top:1px solid var(--line)}
+.do-list{list-style:none;margin:9px 0 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.do-list li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;line-height:1.5}
+.do-list .arrow{color:var(--brand-ink);font-weight:800;flex:none;line-height:1.5}
+.do-list .when{font-weight:700}
+/* provenance footer — what we read, from where */
+.pc-foot{padding:12px 22px;border-top:1px solid var(--line);color:var(--muted);
+  font-size:11.5px;font-family:"JetBrains Mono",monospace;line-height:1.55;word-break:break-word}
 .evidence{padding:14px 22px}
 .evidence summary{cursor:pointer;font-weight:650;font-size:14.5px;color:var(--brand-ink)}
 .evidence pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;
@@ -407,7 +439,7 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
         </button>
         <button class="mode" data-mode="key" type="button">
           <div class="mt">Your API key</div>
-          <div class="md">Runs on OpenAI or Anthropic for the most accurate result. The skill’s code and your key go to that vendor for this one scan.</div>
+          <div class="md">Runs on GPT, Claude, or Gemini for the most accurate result. The skill’s code and your key go to that vendor for this one scan.</div>
           <div class="meta">Full quality</div>
         </button>
         <button class="mode" data-mode="local" type="button">
@@ -422,21 +454,32 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
           <div class="keyrow">
             <label for="bmodel">Model</label>
             <select id="bmodel">
-              <option value="Llama-3.2-3B-Instruct|q4f16" selected>Llama 3.2 3B</option>
-              <option value="Qwen2.5-3B-Instruct|q4f16">Qwen2.5 3B</option>
-              <option value="Phi-3.5-mini-instruct|q4f16">Phi-3.5 mini</option>
-              <option value="Llama-3.2-1B-Instruct|q4f16">Llama 3.2 1B (fastest)</option>
+              <optgroup label="Loads on most machines (faster, misses more)">
+                <option value="Llama-3.2-3B-Instruct|q4f16" selected>Llama 3.2 3B</option>
+                <option value="Qwen2.5-3B-Instruct|q4f16">Qwen2.5 3B</option>
+                <option value="Phi-3.5-mini-instruct|q4f16">Phi-3.5 mini</option>
+                <option value="Llama-3.2-1B-Instruct|q4f16">Llama 3.2 1B (fastest)</option>
+              </optgroup>
+              <optgroup label="Better reader — needs a strong GPU (~6 GB, slower)">
+                <option value="Llama-3.1-8B-Instruct|q4f16">Llama 3.1 8B</option>
+                <option value="Qwen2.5-7B-Instruct|q4f16">Qwen2.5 7B</option>
+              </optgroup>
             </select>
           </div>
-          <p class="scan-hint">The model downloads once (1 to 2&nbsp;GB, depending on your pick) and is cached, so later scans are quick. Needs a browser with WebGPU, such as Chrome or Edge. The skill’s files never leave your computer.</p>
+          <p class="scan-hint">The model downloads once (the small ones are 1 to 2&nbsp;GB; the 7&ndash;8B readers are ~5&nbsp;GB and want a strong GPU) and is cached, so later scans are quick. A bigger model catches more but runs slower. Needs a browser with WebGPU, such as Chrome or Edge. For findings you can fully trust, use your own API key (Mode&nbsp;2). The skill’s files never leave your computer.</p>
         </div>
         <div class="mode-panel" data-for="key">
           <div class="keyrow">
             <label for="provider">Provider</label>
-            <select id="provider"><option>OpenAI</option><option>Anthropic</option></select>
-            <input type="password" id="apiKey" placeholder="Paste your API key (sk-…)" autocomplete="off" spellcheck="false">
+            <select id="provider">
+              <option value="openai">GPT (OpenAI)</option>
+              <option value="anthropic">Claude (Anthropic)</option>
+              <option value="google">Gemini (Google)</option>
+            </select>
+            <input type="password" id="apiKey" placeholder="Paste your API key" autocomplete="off" spellcheck="false">
+            <input type="text" id="apiModel" placeholder="Model (optional, e.g. gpt-4o, claude-opus-4, gemini-2.5-pro)" autocomplete="off" spellcheck="false">
           </div>
-          <p class="scan-hint">The key travels over an encrypted connection, is used for this one scan, and is never saved. Because the scan runs on the vendor’s model, the skill’s code is sent there too. Want nothing to leave your computer? Use the browser model, or run it on your machine.</p>
+          <p class="scan-hint">The key travels over an encrypted connection, is used for this one scan, and is never saved. Because the scan runs on the vendor’s model, the skill’s code is sent there too. Leave Model blank for a sensible default, or name any model your key can use. Want nothing to leave your computer? Use the browser model, or run it on your machine.</p>
         </div>
         <div class="mode-panel" data-for="local">
           <p class="scan-hint">No key to paste here. You set that up on your own machine, in a <span style="font-family:'JetBrains Mono',monospace;font-size:13px">.env</span> file that stays there. <a href="#local">See the commands ↓</a></p>
@@ -470,9 +513,19 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
 <span class="p">$</span> python3.13 -m venv .venv
 <span class="p">$</span> .venv/bin/pip install -r requirements.txt
 
-<span class="c"># 3 · scan a skill folder, and watch all 5 steps in your terminal</span>
-<span class="p">$</span> .venv/bin/python skillxray.py <span class="g">./path/to/your-skill</span> --provider anthropic</pre>
+<span class="c"># 3 · pick how the model runs — all local-friendly, no VPN needed</span>
+<span class="c"># local &amp; private (recommended): run a model on your own machine with Ollama</span>
+<span class="p">$</span> ollama pull llama3.1:8b
+<span class="p">$</span> .venv/bin/python skillxray.py <span class="g">./path/to/your-skill</span> --provider ollama
+
+<span class="c"># or use your own cloud key, kept in a .env file that never leaves your machine:</span>
+<span class="p">$</span> echo "OPENAI_API_KEY=sk-…" >> .env
+<span class="p">$</span> .venv/bin/python skillxray.py <span class="g">./path/to/your-skill</span> --provider openai
+<span class="c"># Anthropic instead? add the SDK, then your key:</span>
+<span class="p">$</span> .venv/bin/pip install anthropic && echo "CLAUDE_API_KEY=sk-ant-…" >> .env
+<span class="p">$</span> .venv/bin/python skillxray.py <span class="g">./path/to/your-skill</span> --provider claude</pre>
     </div>
+    <p class="scan-hint"><b>Pick a capable local model.</b> A small one misses data operations the same way the free in-browser model does — and its context may be too small to read a long file (Ollama defaults low; raise it, e.g. <code>OLLAMA_CONTEXT_LENGTH</code> / <code>num_ctx</code>, or use a cloud key). If a scan reports no findings on a skill that ships code, treat that as inconclusive, not a clean bill of health.</p>
   </div>
 </div></section>
 
@@ -495,6 +548,10 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
   </div>
 </footer>
 
+<!-- The REAL SkillXray method, ported to the browser (extract -> merged CI+harm judge).
+     Generated from the prompt sources by scripts/build_analyzer.py. Modes 1 & 2 use it. -->
+<script src="analyzer.js"></script>
+
 <script>
 /* Real corpus data (from findings-data.json — the same records the site serves).
    Each skill carries its own card so every chip opens its own findings. */
@@ -506,8 +563,39 @@ var HARM = {
   'Inference':                {plain:'Figures out new things about you',     dot:'var(--c5)'},
   'Surveillance':             {plain:'Watches more than it needs to',        dot:'var(--c6)'},
   'Aggregation':              {plain:'Builds a profile from scattered pieces',dot:'var(--c7)'},
-  'Disclosure':               {plain:'Sends your private info out',          dot:'var(--c8)'}
+  'Disclosure':               {plain:'Sends your private info out',          dot:'var(--c8)'},
+  'Identification':           {plain:'Links the data to a named person',     dot:'var(--c1)'},
+  'Interrogation':            {plain:'Presses you for more than it needs',   dot:'var(--c3)'},
+  'Exposure':                 {plain:'Surfaces intimate or bodily details',  dot:'var(--c2)'},
+  'Appropriation':            {plain:'Acts as you without asking each time', dot:'var(--c6)'},
+  'Distortion':               {plain:'May attach a label that is wrong',     dot:'var(--c5)'}
 };
+
+// Severity: "high" harms move your data off the machine or expose intimate/identifying
+// details; the rest over-collect, infer, or stage locally. Transparent + deterministic so
+// the risk badge is explainable, not a black-box score.
+var HIGH_HARMS = {
+  'Disclosure':1,'Secondary Use':1,'Breach of Confidentiality':1,
+  'Exposure':1,'Appropriation':1,'Identification':1
+};
+function sevOf(harm){ return HIGH_HARMS[harm] ? 2 : 1; }
+function riskOf(findings){
+  if(!findings.length) return {cls:'clear', label:'Looks clear', glyph:'✓'};
+  var hi = findings.some(function(f){ return HIGH_HARMS[f.harm]; });
+  return hi ? {cls:'high', label:'High risk', glyph:'⛔'}
+            : {cls:'med',  label:'Medium risk', glyph:'⚠'};
+}
+// Concrete next steps, chosen by which kinds of harm are present.
+function actionsFor(findings){
+  var h={}; findings.forEach(function(f){ h[f.harm]=1; });
+  var leaves = h['Disclosure']||h['Secondary Use']||h['Breach of Confidentiality']||h['Exposure'];
+  var shared = h['Increased Accessibility'];
+  var acts=[['Before installing','Open each flagged item above and decide if you’re comfortable with what it actually does.']];
+  if(leaves) acts.push(['If you install','Check what leaves your machine before you connect an account or paste an API key.']);
+  if(shared) acts.push(['If you install','Delete any files it leaves in shared or temp folders, so others on the machine can’t read them.']);
+  acts.push(['To stop later','Revoke the skill’s access in the app or account it reads from.']);
+  return acts;
+}
 
 var SKILLS = {
   'apple-health-skill': {
@@ -669,14 +757,57 @@ var LOOKS_FINE = {
       +'<div class="k k-does">What the code actually does</div>'
       +'<p>'+s.does+'</p></div>';
 
+    // ---- inconclusive: a failed/empty read is NOT a clean bill of health ----
+    var inconc = s.status==='inconclusive';
+    if(inconc){
+      // don't assert "what the code does" — we don't reliably know; show only the claim
+      var incLead=
+        '<div class="pc-lead">'
+        +'<div class="k k-say">What it says it does</div>'
+        +'<div class="say-line say">“'+esc(s.claim)+'”</div></div>';
+      var incBanner =
+        '<div class="risk inconc">'
+        +'<div class="risk-top">'
+          +'<span class="risk-badge">? Inconclusive</span>'
+          +'<span class="risk-count">nothing extracted</span>'
+        +'</div>'
+        +'<p class="risk-sum">'+esc(s.incMsg||'')+'</p></div>';
+      var incFoot = '<div class="pc-foot">'
+        + ((s.files && s.files.length)
+            ? 'Read '+s.files.length+' file'+(s.files.length>1?'s':'')+' — '+esc(s.files.slice(0,6).join(', '))+(s.files.length>6?', …':'')
+            : 'Read the skill’s files without running them.')
+        + (s.source ? ' &middot; source: '+esc(s.source) : '')
+        + ' &middot; by SkillXray</div>';
+      mount.innerHTML=
+        '<div class="top"><span class="t">Privacy Card</span><span class="tag">'+esc(s.tag||key)+'</span></div>'
+        +incLead+incBanner+incFoot;
+      return;
+    }
+
+    // ---- risk headline: the "how bad is it?" answer, color-coded by severity ----
+    var risk = riskOf(s.findings);
+    var total = s.moves||n;
+    var countTxt = n
+      ? n+' of '+total+' data practices flagged'
+      : (total ? total+' data practices, none flagged' : 'No data practices found');
+    var riskBanner =
+      '<div class="risk '+risk.cls+'">'
+      +'<div class="risk-top">'
+        +'<span class="risk-badge">'+risk.glyph+' '+risk.label+'</span>'
+        +'<span class="risk-count">'+countTxt+'</span>'
+      +'</div>'
+      +'<p class="risk-sum">'+esc(s.watch||'')+'</p></div>';
+
+    // ---- findings, most-severe first (cats stay aligned to their finding) ----
     var cats=DATA_CATS[key]||[];
-    var rows=s.findings.map(function(f,i){
-      var h=HARM[f.harm];
-      var cat=cats[i]||f.title;
+    var pairs=s.findings.map(function(f,i){ return {f:f, cat:cats[i]||f.title, i:i}; });
+    pairs.sort(function(a,b){ return sevOf(b.f.harm)-sevOf(a.f.harm) || a.i-b.i; });
+    var rows=pairs.map(function(p){
+      var f=p.f, h=HARM[f.harm]||{dot:'var(--amber)',plain:''};
       return '<li class="fitem">'
-        +'<button class="fhead" aria-expanded="false" data-i="'+i+'">'
+        +'<button class="fhead" aria-expanded="false">'
           +'<span class="dot" style="background:'+h.dot+'"></span>'
-          +'<span class="ftitle"><span class="dcat">'+esc(cat)+'</span>'
+          +'<span class="ftitle"><span class="dcat">'+esc(p.cat)+'</span>'
             +'<span class="dwhat">'+esc(f.title)+'</span></span>'
           +'<span class="flag">Worth a look</span>'
           +'<span class="chev">&#9656;</span>'
@@ -688,23 +819,46 @@ var LOOKS_FINE = {
           +'<p class="fkind-full">In privacy terms: '+esc(h.plain)+' (Solove: '+esc(f.harm)+')</p>'
         +'</div></li>';
     }).join('');
+    var findingsBlock = n
+      ? '<div class="pc-sec"><div class="pc-sec-h">What could happen</div>'
+        +'<ol class="flist">'+rows+'</ol></div>'
+      : '';
+
+    // ---- what you can do: concrete steps, derived from the harms present ----
+    var doBlock = '';
+    if(n){
+      var acts=actionsFor(s.findings).map(function(a){
+        return '<li><span class="arrow">&rarr;</span><span><span class="when">'+esc(a[0])+':</span> '+esc(a[1])+'</span></li>';
+      }).join('');
+      doBlock = '<div class="pc-do"><div class="pc-sec-h">What you can do</div>'
+        +'<ul class="do-list">'+acts+'</ul></div>';
+    }
 
     var fine=(LOOKS_FINE[key]||[]).map(function(t){
       return '<li><span class="tick">&#10003;</span><span>'+esc(t)+'</span></li>';
     }).join('');
     var fineBlock = fine
-      ? '<div class="pc-sec fine"><div class="pc-sec-h">Looks fine</div>'
+      ? '<div class="pc-sec fine"><div class="pc-sec-h">As described</div>'
         +'<ul class="finelist">'+fine+'</ul></div>'
       : '';
+
+    // ---- provenance footer: what we read, from where ----
+    var files = (s.files && s.files.length) ? s.files : null;
+    var foot = '<div class="pc-foot">'
+      + (files
+          ? 'Read '+files.length+' file'+(files.length>1?'s':'')+' without running '+(files.length>1?'them':'it')+' — '+esc(files.slice(0,6).join(', '))+(files.length>6?', …':'')
+          : 'Read the skill’s files without running them.')
+      + (s.source ? ' &middot; source: '+esc(s.source) : '')
+      + ' &middot; by SkillXray</div>';
 
     mount.innerHTML=
       '<div class="top"><span class="t">Privacy Card</span><span class="tag">'+esc(s.tag||key)+'</span></div>'
       +lead
-      +'<div class="crow2 watch"><div class="k">⚠ Before you install</div><div class="v">'+esc(s.watch)+'</div></div>'
-      +'<div class="pc-sec"><div class="pc-sec-h">What it does with your data'
-        +'<span class="pc-count">'+s.moves+' data moves read &middot; '+n+' worth a look</span></div>'
-        +'<ol class="flist">'+rows+'</ol></div>'
-      +fineBlock;
+      +riskBanner
+      +findingsBlock
+      +doBlock
+      +fineBlock
+      +foot;
 
     // each finding row opens to show the evidence
     Array.prototype.forEach.call(mount.querySelectorAll('.fhead'),function(btn){
@@ -750,7 +904,9 @@ var LOOKS_FINE = {
     if(existing){ existing.outerHTML = row; }
     else { grid.querySelector('.md-lab').insertAdjacentHTML('afterend', row); }
     render(key);
-    document.getElementById('try').scrollIntoView({behavior:'smooth', block:'start'});
+    // Don't yank the page to the top of the section — that jump is disorienting right after a
+    // scan. Bring the card into view only if it isn't already, and by the least amount needed.
+    mount.scrollIntoView({behavior:'smooth', block:'nearest'});
   };
 
   render('apple-health-skill'); // default card shown at rest
@@ -870,7 +1026,7 @@ var LOOKS_FINE = {
     return { files:files, combined: files.map(function(f){ return '=== FILE: '+f.path+' ===\n'+f.text; }).join('\n\n') };
   }
 
-  var HARM_KEYS=['Secondary Use','Breach of Confidentiality','Exclusion','Increased Accessibility','Inference','Surveillance','Aggregation','Disclosure'];
+  var HARM_KEYS=['Secondary Use','Breach of Confidentiality','Exclusion','Increased Accessibility','Inference','Surveillance','Aggregation','Disclosure','Identification','Interrogation','Exposure','Appropriation','Distortion'];
   function normalizeHarm(x){
     if(!x) return 'Secondary Use';
     var s=String(x).toLowerCase();
@@ -878,19 +1034,20 @@ var LOOKS_FINE = {
     for(var j=0;j<HARM_KEYS.length;j++){ var k=HARM_KEYS[j].toLowerCase(); if(k.indexOf(s)>-1||s.indexOf(k)>-1) return HARM_KEYS[j]; }
     return 'Secondary Use';
   }
-  var SYS = [
-    'You are SkillXray, a privacy analyzer for AI agent "skills" (a SKILL.md plus scripts). You READ code, you never run it.',
-    'Your job is privacy of use: does the skill do things with personal data that go beyond what its own description says it does?',
-    'This is not security. The skills here are benign but can be honest but negligent. Never use the words attacker, threat, malware, or malicious. A finding is something a careful person would want to look at, not an accusation.',
-    'A data move is any place the code reads, stores, sends, or infers personal data. Flag a move only when it goes further than the SKILL.md description implies: for example it sends data to an outside service the description never names, writes personal data to a shared or world-readable place, infers a new sensitive fact (mood, health, identity), forwards other people\'s data, or keeps data the task did not need.',
-    'Label each flagged move with exactly one of: Secondary Use, Breach of Confidentiality, Exclusion, Increased Accessibility, Inference, Surveillance, Aggregation, Disclosure.',
-    'Return ONLY a JSON object, no prose, shaped exactly like:',
-    '{"claim": string, "does": string, "summary": string, "watch": string, "dataMoves": integer, "findings": [{"category": string, "title": string, "why": string, "file": string, "lines": string, "code": string, "harm": string}], "looksFine": [string]}',
-    'claim = one sentence for what SKILL.md says the skill is for. does = one or two plain sentences on what the code actually does with data. summary = one short headline sentence. watch = one sentence to keep in mind, or "" if nothing was flagged. category = a short data-type label like "Your browsing history". title = a short phrase for what it does. why = one or two plain sentences, no jargon. file/lines = where you saw it. code = the exact snippet, at most two lines. looksFine = one to three expected, in-description behaviours that are fine.',
-    'Write for a non-developer. Plain, calm, specific. Do not use em dashes.'
-  ].join('\n');
+  /* The one-shot SYS prompt is gone. Modes 1 & 2 now run the REAL method from analyzer.js
+     (per-section extraction + a merged CI-verdict / Solove-harm judge with demos). A single
+     weak prompt recovered only ~17% of the subtle violations the full method finds. */
 
   var engineCache={};
+  // WebLLM ships a low-memory "-1k" build of each small model whose context window is only
+  // 1024 tokens — far too small for our prompts (~2.5k). Rank each candidate by its real
+  // context so we always pick the full-context build, never the 1k one.
+  function ctxOf(m){
+    if(/-1k\b/i.test(m.model_id||'')) return 1024;
+    var o = m.overrides && m.overrides.context_window_size;
+    if(typeof o==='number' && o>0) return o;
+    return 100000; // unknown = full-context; ranks above any 1k build
+  }
   async function resolveModelId(sel){
     var webllm = await window.__loadWebLLM();
     var list = (webllm.prebuiltAppConfig && webllm.prebuiltAppConfig.model_list) || [];
@@ -898,27 +1055,35 @@ var LOOKS_FINE = {
     var hit = list.filter(function(m){ var id=m.model_id.toLowerCase(); return kw.every(function(k){return id.indexOf(k)>-1;}); });
     if(!hit.length && kw.length) hit = list.filter(function(m){ return m.model_id.toLowerCase().indexOf(kw[0])>-1; });
     if(!hit.length) throw new Error('That model was not found in your browser build. Try another from the list.');
+    hit.sort(function(a,b){ return ctxOf(b)-ctxOf(a); });   // biggest context first — skip the 1k build
     return hit[0].model_id;
   }
   async function ensureEngine(modelId, onProgress){
     if(engineCache[modelId]) return engineCache[modelId];
     var webllm = await window.__loadWebLLM();
-    var engine = await webllm.CreateMLCEngine(modelId, {initProgressCallback:onProgress});
+    // Pin a 4096-token window as a backstop: enough for our clipped prompts + output, and it
+    // overrides any small per-model default so we never hit the 1024 ceiling again.
+    var engine = await webllm.CreateMLCEngine(modelId, {initProgressCallback:onProgress}, {context_window_size:4096});
     engineCache[modelId] = engine; return engine;
   }
-  function parseJSON(txt){
-    txt = String(txt||'').replace(/```json/gi,'').replace(/```/g,'').trim();
-    var a=txt.indexOf('{'), b=txt.lastIndexOf('}');
-    if(a>-1&&b>-1) txt=txt.slice(a,b+1);
-    return JSON.parse(txt);
-  }
-  async function analyze(engine, name, combined){
-    var resp = await engine.chat.completions.create({
-      messages:[{role:'system',content:SYS},
-                {role:'user',content:'Skill name: '+name+'\n\nHere are the skill\'s files. Analyze them and return only the JSON.\n\n'+combined}],
-      temperature:0, max_tokens:1800, response_format:{type:'json_object'}
-    });
-    return parseJSON(resp.choices[0].message.content);
+  /* Mode 1 chat adapter: a plain (system,user)->text call on the in-browser WebLLM engine.
+     No response_format:json_object — the method's prompts return JSON ARRAYS, which that
+     mode cannot represent; analyzer.js parses arrays robustly instead. */
+  function webllmChat(engine, onTick){
+    return async function(sys, user, opts){
+      /* Stream so the user sees live progress — an in-browser GPU decodes slowly, and a silent
+         multi-minute call looks frozen. onTick reports tokens generated so far for this call. */
+      var stream = await engine.chat.completions.create({
+        messages:[{role:'system',content:sys},{role:'user',content:user}],
+        temperature:0, max_tokens:(opts&&opts.maxTokens)||2048, stream:true
+      });
+      var out='', n=0;
+      for await (var chunk of stream){
+        var d=(chunk.choices&&chunk.choices[0]&&chunk.choices[0].delta&&chunk.choices[0].delta.content)||'';
+        if(d){ out+=d; n++; if(onTick && (n%8===0)) onTick(n); }
+      }
+      return out;
+    };
   }
 
   /* ---- API-key mode: run the same analysis on OpenAI or Anthropic, straight
@@ -939,33 +1104,53 @@ var LOOKS_FINE = {
     if(!r.ok){ var t=''; try{ t=await r.text(); }catch(e){} throw new Error(apiErr(vendor, r.status, t)); }
     return r.json();
   }
-  async function analyzeAPI(provider, key, name, combined){
-    var userMsg = 'Skill name: '+name+'\n\nHere are the skill\'s files. Analyze them and return only the JSON.\n\n'+combined;
-    if(provider==='anthropic'){
-      var d = await postJSON('https://api.anthropic.com/v1/messages', {
-        'content-type':'application/json',
-        'x-api-key':key,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      }, {
-        model:'claude-3-5-sonnet-latest', max_tokens:2500, temperature:0,
-        system:SYS, messages:[{role:'user', content:userMsg}]
-      }, 'Anthropic');
-      var txt = (d.content && d.content[0] && d.content[0].text) || '';
-      return parseJSON(txt);
-    } else {
-      var d2 = await postJSON('https://api.openai.com/v1/chat/completions', {
-        'content-type':'application/json',
-        'authorization':'Bearer '+key
-      }, {
-        model:'gpt-4o', temperature:0, max_tokens:2500,
-        response_format:{type:'json_object'},
-        messages:[{role:'system', content:SYS}, {role:'user', content:userMsg}]
-      }, 'OpenAI');
-      return parseJSON(d2.choices[0].message.content);
-    }
+  /* Mode 2 chat adapter: the same (system,user)->text call against the user's own OpenAI,
+     Anthropic, or Google (Gemini) key, straight from the browser. `model` is optional — if the
+     user typed one it is honored, else a sensible default. No response_format:json_object
+     (arrays; see above). The key and the skill's code go only to that vendor, for these calls,
+     and are never stored. */
+  var PROVIDER_NAME = {openai:'OpenAI', anthropic:'Anthropic', google:'Google'};
+  function apiChat(provider, key, model){
+    return async function(sys, user, opts){
+      var mt = (opts&&opts.maxTokens)||3000;
+      if(provider==='anthropic'){
+        var d = await postJSON('https://api.anthropic.com/v1/messages', {
+          'content-type':'application/json',
+          'x-api-key':key,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        }, {
+          model: model||'claude-3-5-sonnet-latest', max_tokens:mt, temperature:0,
+          system:sys, messages:[{role:'user', content:user}]
+        }, 'Anthropic');
+        return (d.content && d.content[0] && d.content[0].text) || '';
+      } else if(provider==='google'){
+        // Gemini's REST API: system prompt goes in systemInstruction; key is a query param.
+        var gm = model||'gemini-2.5-flash';
+        var d3 = await postJSON('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(gm)+':generateContent?key='+encodeURIComponent(key), {
+          'content-type':'application/json'
+        }, {
+          systemInstruction:{ parts:[{text:sys}] },
+          contents:[{ role:'user', parts:[{text:user}] }],
+          generationConfig:{ temperature:0, maxOutputTokens:mt }
+        }, 'Google');
+        var cand = d3.candidates && d3.candidates[0];
+        var parts = cand && cand.content && cand.content.parts;
+        return (parts||[]).map(function(p){ return p.text||''; }).join('') || '';
+      } else {
+        var d2 = await postJSON('https://api.openai.com/v1/chat/completions', {
+          'content-type':'application/json',
+          'authorization':'Bearer '+key
+        }, {
+          model: model||'gpt-4o', temperature:0, max_tokens:mt,
+          messages:[{role:'system', content:sys}, {role:'user', content:user}]
+        }, 'OpenAI');
+        return (d2.choices && d2.choices[0] && d2.choices[0].message.content) || '';
+      }
+    };
   }
-  function buildLiveSkill(name, j){
+  function buildLiveSkill(name, j, prov){
+    prov = prov || {};
     var raw = Array.isArray(j.findings)?j.findings:[];
     var findings = raw.slice(0,12).map(function(f){
       return { harm: normalizeHarm(f.harm),
@@ -977,6 +1162,16 @@ var LOOKS_FINE = {
     });
     var n=findings.length;
     var moves = (typeof j.dataMoves==='number' && j.dataMoves>=n) ? j.dataMoves : n;
+    var files = Array.isArray(prov.files) ? prov.files : (Array.isArray(j.filesAnalyzed)?j.filesAnalyzed:null);
+    // does this skill ship code, or is it only prose? .md/.txt are prose; .py/.sh/.c/.m/.js/… are code.
+    var hasCode = (files||[]).some(function(f){ return /\.(py|js|mjs|cjs|ts|sh|bash|zsh|rb|pl|c|h|m|mm|go|rs|java|kt|swift|php|lua|ps1)$/i.test(String(f)); });
+    // A zero-moves result is only trustworthy from a CAPABLE model on a PROSE-ONLY skill.
+    // The free in-browser model under-extracts, and any skill that ships code that came back
+    // empty is a failed read — not a clean bill of health. Never paint either as "clear".
+    var inconclusive = (moves===0) && (prov.mode==='browser' || hasCode);
+    var incMsg = prov.mode==='browser'
+      ? 'The free in-browser model finished but flagged nothing — and on real skills it often misses what code actually does. Don’t read this as “safe.” Re-run with your own API key (Mode 2) or on your machine (Mode 3) for a read you can trust.'
+      : 'This skill ships code, but the scan came back with nothing flagged. That’s more likely an incomplete read than a clean skill — treat it as inconclusive and re-run on your machine (Mode 3), which can reach every file.';
     var skill = {
       tag: name,
       chip: String(j.summary || j.does || 'Scanned this skill.'),
@@ -984,9 +1179,15 @@ var LOOKS_FINE = {
       claim: String(j.claim||''),
       does: esc(String(j.does||'')),          // render injects does as HTML, so escape it here
       moves: moves,
+      status: inconclusive ? 'inconclusive' : (n ? 'flagged' : 'clear'),
+      incMsg: incMsg,
       watch: n ? String(j.watch||'Read the flagged items below before you install.')
-               : 'Nothing here looked like it goes beyond what the skill describes. It is still your call before you install.',
-      findings: findings
+               : (moves>0
+                   ? 'It reads your data as its description says, and nothing in the code goes further. Your call before you install.'
+                   : 'Nothing in the files we read touches your data.'),
+      findings: findings,
+      files: files,
+      source: prov.source || ''
     };
     var cats = findings.map(function(f,i){ var c=raw[i]&&raw[i].category; return String(c||f.title); });
     var fine = (Array.isArray(j.looksFine)?j.looksFine:[]).slice(0,4).map(String);
@@ -1006,9 +1207,12 @@ var LOOKS_FINE = {
     try{
       var provider=null, key=null;
       if(mode==='key'){
-        provider = (((document.getElementById('provider')||{}).value)||'OpenAI').toLowerCase().indexOf('anthropic')>-1 ? 'anthropic' : 'openai';
+        var pv = (((document.getElementById('provider')||{}).value)||'openai').toLowerCase();
+        provider = (pv.indexOf('anthropic')>-1||pv.indexOf('claude')>-1) ? 'anthropic'
+                 : (pv.indexOf('google')>-1||pv.indexOf('gemini')>-1) ? 'google'
+                 : 'openai';
         key = (((document.getElementById('apiKey')||{}).value)||'').trim();
-        if(!key) throw new Error('Paste your '+(provider==='anthropic'?'Anthropic':'OpenAI')+' API key above, or switch to the free in-browser model.');
+        if(!key) throw new Error('Paste your '+PROVIDER_NAME[provider]+' API key above, or switch to the free in-browser model.');
       } else if(!('gpu' in navigator)){
         throw new Error('This browser has no WebGPU, so the in-browser model cannot run. Try Chrome or Edge, use your API key, or run it on your machine with the commands below.');
       }
@@ -1022,14 +1226,18 @@ var LOOKS_FINE = {
 
       var j;
       if(mode==='key'){
-        var vname = provider==='anthropic' ? 'Anthropic' : 'OpenAI';
+        var vname = PROVIDER_NAME[provider];
         steps[1].className='active';
         pnote.hidden=false; pnote.innerHTML='Sending the code to '+vname+' over an encrypted connection, for this one scan.';
         steps[1].className='done'; steps[1].setAttribute('data-sub', vname); setSub(steps[1]);
 
         steps[2].className='active';
-        pnote.innerHTML='Reading the code and checking it against what the skill promises.';
-        j = await analyzeAPI(provider, key, p.name, sk.combined);
+        var phaseMsg='Reading the code and checking it against what the skill promises.';
+        pnote.innerHTML=esc(phaseMsg);
+        var apiModel = (((document.getElementById('apiModel')||{}).value)||'').trim();
+        j = await window.SkillXray.analyze(apiChat(provider, key, apiModel),
+              {name:p.name, files:sk.files, combined:sk.combined},
+              {onPhase:function(m){ phaseMsg=m; pnote.innerHTML=esc(m); }});
         steps[2].className='done'; setSub(steps[2]);
       } else {
         steps[1].className='active';
@@ -1042,13 +1250,23 @@ var LOOKS_FINE = {
         steps[1].className='done'; steps[1].setAttribute('data-sub','model ready'); setSub(steps[1]);
 
         steps[2].className='active';
-        pnote.innerHTML='Reading the code and checking it against what the skill promises.';
-        j = await analyze(engine, p.name, sk.combined);
+        var bMsg='Reading the code and checking it against what the skill promises.';
+        pnote.innerHTML=esc(bMsg);
+        var chat = webllmChat(engine, function(n){
+          pnote.innerHTML = esc(bMsg)+' <span style="opacity:.6">('+n+' tokens…)</span>';
+        });
+        j = await window.SkillXray.analyze(chat,
+              {name:p.name, files:sk.files, combined:sk.combined},
+              {budget:'browser', onPhase:function(m){ bMsg=m; pnote.innerHTML=esc(m); }});
         steps[2].className='done'; setSub(steps[2]);
       }
 
       steps[3].className='active';
-      var built = buildLiveSkill(p.name, j);
+      var built = buildLiveSkill(p.name, j, {
+        files: (sk.files||[]).map(function(f){ return f.path; }),
+        source: p.owner,
+        mode: mode
+      });
       steps[3].className='done'; setSub(steps[3]);
 
       steps[4].className='active';
