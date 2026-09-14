@@ -847,13 +847,13 @@ var LOOKS_FINE = {
           +'<span class="risk-count">nothing extracted</span>'
         +'</div>'
         +'<p class="risk-sum">'+esc(s.incMsg||'')+'</p></div>';
-      var incFoot = ‘<div class="pc-foot">’
+      var incFoot = '<div class="pc-foot">'
         + ((s.files && s.files.length)
-            ? ‘Read ‘+s.files.length+’ file’+(s.files.length>1?’s’:’’)+’ — ‘+esc(s.files.slice(0,6).join(‘, ‘))+(s.files.length>6?’, …’:’’)
-            : ‘Read the skill’s files without running them.’)
-        + (s.source ? ‘ &middot; source: ‘+esc(s.source) : ‘’)
-        + (s.modelLabel ? ‘ &middot; model: ‘+esc(s.modelLabel) : ‘’)
-        + ‘ &middot; by SkillXray</div>’;
+            ? 'Read '+s.files.length+' file'+(s.files.length>1?'s':'')+' — '+esc(s.files.slice(0,6).join(', '))+(s.files.length>6?', …':'')
+            : 'Read the skill's files without running them.')
+        + (s.source ? ' &middot; source: '+esc(s.source) : '')
+        + (s.modelLabel ? ' &middot; model: '+esc(s.modelLabel) : '')
+        + ' &middot; by SkillXray</div>';
       mount.innerHTML=
         '<div class="top"><span class="t">Privacy Card</span><span class="tag">'+esc(s.tag||key)+'</span></div>'
         +incLead+incBanner+incFoot;
@@ -920,13 +920,13 @@ var LOOKS_FINE = {
 
     // ---- provenance footer: what we read, from where ----
     var files = (s.files && s.files.length) ? s.files : null;
-    var foot = ‘<div class="pc-foot">’
+    var foot = '<div class="pc-foot">'
       + (files
-          ? ‘Read ‘+files.length+’ file’+(files.length>1?’s’:’’)+’ without running ‘+(files.length>1?’them’:’it’)+’ — ‘+esc(files.slice(0,6).join(‘, ‘))+(files.length>6?’, …’:’’)
-          : ‘Read the skill’s files without running them.’)
-      + (s.source ? ‘ &middot; source: ‘+esc(s.source) : ‘’)
-      + (s.modelLabel ? ‘ &middot; model: ‘+esc(s.modelLabel) : ‘’)
-      + ‘ &middot; by SkillXray</div>’;
+          ? 'Read '+files.length+' file'+(files.length>1?'s':'')+' without running '+(files.length>1?'them':'it')+' — '+esc(files.slice(0,6).join(', '))+(files.length>6?', …':'')
+          : 'Read the skill's files without running them.')
+      + (s.source ? ' &middot; source: '+esc(s.source) : '')
+      + (s.modelLabel ? ' &middot; model: '+esc(s.modelLabel) : '')
+      + ' &middot; by SkillXray</div>';
 
     var isLive = !!(DATA_CATS[key] !== undefined && window.__shareEncode);
     var shareBar = isLive
