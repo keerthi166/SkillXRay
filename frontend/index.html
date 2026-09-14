@@ -847,12 +847,13 @@ var LOOKS_FINE = {
           +'<span class="risk-count">nothing extracted</span>'
         +'</div>'
         +'<p class="risk-sum">'+esc(s.incMsg||'')+'</p></div>';
-      var incFoot = '<div class="pc-foot">'
+      var incFoot = ‘<div class="pc-foot">’
         + ((s.files && s.files.length)
-            ? 'Read '+s.files.length+' file'+(s.files.length>1?'s':'')+' — '+esc(s.files.slice(0,6).join(', '))+(s.files.length>6?', …':'')
-            : 'Read the skill’s files without running them.')
-        + (s.source ? ' &middot; source: '+esc(s.source) : '')
-        + ' &middot; by SkillXray</div>';
+            ? ‘Read ‘+s.files.length+’ file’+(s.files.length>1?’s’:’’)+’ — ‘+esc(s.files.slice(0,6).join(‘, ‘))+(s.files.length>6?’, …’:’’)
+            : ‘Read the skill’s files without running them.’)
+        + (s.source ? ‘ &middot; source: ‘+esc(s.source) : ‘’)
+        + (s.modelLabel ? ‘ &middot; model: ‘+esc(s.modelLabel) : ‘’)
+        + ‘ &middot; by SkillXray</div>’;
       mount.innerHTML=
         '<div class="top"><span class="t">Privacy Card</span><span class="tag">'+esc(s.tag||key)+'</span></div>'
         +incLead+incBanner+incFoot;
@@ -919,12 +920,13 @@ var LOOKS_FINE = {
 
     // ---- provenance footer: what we read, from where ----
     var files = (s.files && s.files.length) ? s.files : null;
-    var foot = '<div class="pc-foot">'
+    var foot = ‘<div class="pc-foot">’
       + (files
-          ? 'Read '+files.length+' file'+(files.length>1?'s':'')+' without running '+(files.length>1?'them':'it')+' — '+esc(files.slice(0,6).join(', '))+(files.length>6?', …':'')
-          : 'Read the skill’s files without running them.')
-      + (s.source ? ' &middot; source: '+esc(s.source) : '')
-      + ' &middot; by SkillXray</div>';
+          ? ‘Read ‘+files.length+’ file’+(files.length>1?’s’:’’)+’ without running ‘+(files.length>1?’them’:’it’)+’ — ‘+esc(files.slice(0,6).join(‘, ‘))+(files.length>6?’, …’:’’)
+          : ‘Read the skill’s files without running them.’)
+      + (s.source ? ‘ &middot; source: ‘+esc(s.source) : ‘’)
+      + (s.modelLabel ? ‘ &middot; model: ‘+esc(s.modelLabel) : ‘’)
+      + ‘ &middot; by SkillXray</div>’;
 
     var isLive = !!(DATA_CATS[key] !== undefined && window.__shareEncode);
     var shareBar = isLive
@@ -1380,7 +1382,8 @@ var LOOKS_FINE = {
                    : 'Nothing in the files we read touches your data.'),
       findings: findings,
       files: files,
-      source: prov.source || ''
+      source: prov.source || '',
+      modelLabel: prov.modelLabel || null
     };
     var cats = findings.map(function(f,i){ var c=raw[i]&&raw[i].category; return String(c||f.title); });
     var fine = (Array.isArray(j.looksFine)?j.looksFine:[]).slice(0,4).map(String);
@@ -1504,10 +1507,13 @@ var LOOKS_FINE = {
       }
 
       steps[3].className='active';
+      var bmodelOptEl = bmodelEl && bmodelEl.options[bmodelEl.selectedIndex];
+      var modelLabel = mode==='browser' && bmodelOptEl ? bmodelOptEl.textContent.trim() : null;
       var built = buildLiveSkill(p.name, j, {
         files: (sk.files||[]).map(function(f){ return f.path; }),
         source: p.owner,
-        mode: mode
+        mode: mode,
+        modelLabel: modelLabel
       });
       steps[3].className='done'; setSub(steps[3]);
 
