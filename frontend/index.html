@@ -1427,6 +1427,7 @@ var LOOKS_FINE = {
 
   if(shortLinkBtn) shortLinkBtn.addEventListener('click', function(){
     var d = getShareData(); if(!d){ showNote('No scan to share yet.', true); return; }
+    if(!confirm('This creates a permanent, public GitHub Gist containing the scan findings — including any code snippets. It cannot be deleted after posting.\n\nContinue?')) return;
     shortLinkBtn.textContent = 'Getting link…';
     shortLinkBtn.disabled = true;
     var payload = JSON.stringify({key:d.key, skill:d.skill, cats:d.cats, fine:d.fine});
