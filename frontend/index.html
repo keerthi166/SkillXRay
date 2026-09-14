@@ -973,31 +973,30 @@ var LOOKS_FINE = {
             var encoded = window.__shareEncode(d.key, d.skill, d.cats, d.fine);
             cardCopy(location.origin+location.pathname+'#share='+encoded, 'Link copied!');
           } else if(btn.getAttribute('data-share')==='img'){
-            btn.textContent = 'Capturing…';
-            btn.disabled = true;
             var shareEl = mount.querySelector('.card-share');
-            if(shareEl) shareEl.style.visibility = 'hidden';
+            if(shareEl) shareEl.hidden = true;
+            var skillName = (d.skill.tag||d.key).replace(/[^a-z0-9_-]/gi,'-').toLowerCase();
+            var filename = 'skillxray-privacy-card-' + skillName + '.png';
+            function restoreBtn(){
+              if(shareEl) shareEl.hidden = false;
+            }
             function doCapture(h2c){
               h2c(mount, {
                 scale: 2,
                 useCORS: true,
-                backgroundColor: null,
+                backgroundColor: '#ffffff',
                 logging: false
               }).then(function(canvas){
-                if(shareEl) shareEl.style.visibility = '';
-                btn.textContent = 'Save card';
-                btn.disabled = false;
+                restoreBtn();
                 canvas.toBlob(function(blob){
                   var a = document.createElement('a');
                   a.href = URL.createObjectURL(blob);
-                  a.download = 'skillxray-' + (d.skill.tag||d.key).replace(/[^a-z0-9_-]/gi,'-') + '.png';
+                  a.download = filename;
                   a.click();
                   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 10000);
                 }, 'image/png');
               }).catch(function(){
-                if(shareEl) shareEl.style.visibility = '';
-                btn.textContent = 'Save card';
-                btn.disabled = false;
+                restoreBtn();
                 cardShowNote('Could not capture image.', true);
               });
             }
@@ -1008,9 +1007,7 @@ var LOOKS_FINE = {
               s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
               s.onload = function(){ doCapture(window.html2canvas); };
               s.onerror = function(){
-                if(shareEl) shareEl.style.visibility = '';
-                btn.textContent = 'Save card';
-                btn.disabled = false;
+                restoreBtn();
                 cardShowNote('Could not load image library.', true);
               };
               document.head.appendChild(s);
