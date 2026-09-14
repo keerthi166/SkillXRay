@@ -18,6 +18,7 @@
 
   gtag('config', 'G-83XGCVETFE');
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..600&family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -205,6 +206,9 @@ section{padding:62px 0}
   justify-content:space-between;gap:12px;flex-wrap:wrap}
 .pfoot.show{display:flex}
 .pfoot .ok{font-size:14px;font-weight:650;color:var(--brand-ink)}
+.pfoot .share-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pfoot .share-note{font-size:12.5px;color:var(--brand-ink);font-weight:600;opacity:0;transition:opacity .4s}
+.pfoot .share-note.vis{opacity:1}
 
 /* local terminal */
 .local{margin-top:26px}
@@ -508,7 +512,7 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
         <li data-sub=""><span class="ic"></span><div><div class="txt">Labeling what goes further than expected</div><div class="sub"></div></div></li>
         <li data-sub=""><span class="ic"></span><div><div class="txt">Writing your Privacy Card</div><div class="sub"></div></div></li>
       </ul>
-      <div class="pfoot" id="pfoot"><span class="ok" id="pok">✓ Done.</span><a class="btn" id="openCard" href="#try">Open the Privacy Card →</a></div>
+      <div class="pfoot" id="pfoot"><span class="ok" id="pok">✓ Done.</span><div class="share-btns"><a class="btn" id="openCard" href="#try">Open the Privacy Card →</a><button class="btn" id="copyLink" type="button">Copy link</button><button class="btn" id="shortLink" type="button">Short link</button><span class="share-note" id="shareNote"></span></div></div>
     </div>
   </div>
 
@@ -562,6 +566,56 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
 <!-- The REAL SkillXray method, ported to the browser (extract -> merged CI+harm judge).
      Generated from the prompt sources by scripts/build_analyzer.py. Modes 1 & 2 use it. -->
 <script src="analyzer.js"></script>
+<script>
+/* ---- Share helpers ---- */
+(function(){
+  function b64uEncode(u8){ return btoa(String.fromCharCode.apply(null,u8)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  function b64uDecode(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; var b=atob(s),u=new Uint8Array(b.length); for(var i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+
+  window.__shareEncode = function(key, skill, cats, fine){
+    var payload = JSON.stringify({key:key,skill:skill,cats:cats,fine:fine});
+    var compressed = window.pako ? pako.deflate(payload) : new TextEncoder().encode(payload);
+    return b64uEncode(compressed);
+  };
+
+  window.__shareDecode = function(encoded){
+    var u8 = b64uDecode(encoded);
+    var json = window.pako ? pako.inflate(u8,{to:'string'}) : new TextDecoder().decode(u8);
+    return JSON.parse(json);
+  };
+
+  /* On load: check for #share=<data> or #gist=<id> and restore the card. */
+  function tryRestoreShare(){
+    var hash = location.hash.slice(1);
+    if(!hash) return;
+    var m;
+    if((m=hash.match(/^share=(.+)/))) {
+      try{
+        var d = window.__shareDecode(m[1]);
+        if(window.__setLiveSkill) window.__setLiveSkill(d.key,d.skill,d.cats,d.fine);
+        else window.addEventListener('__skillxray:ready',function(){ window.__setLiveSkill(d.key,d.skill,d.cats,d.fine); },{once:true});
+      }catch(e){ console.warn('SkillXray share: could not decode fragment',e); }
+    } else if((m=hash.match(/^gist=([a-zA-Z0-9]+)/))) {
+      fetch('https://api.github.com/gists/'+m[1])
+        .then(function(r){ return r.json(); })
+        .then(function(g){
+          var file = g.files && g.files['skillxray-card.json'];
+          if(!file) throw new Error('no card file in gist');
+          return fetch(file.raw_url);
+        })
+        .then(function(r){ return r.text(); })
+        .then(function(txt){
+          var d = JSON.parse(txt);
+          if(window.__setLiveSkill) window.__setLiveSkill(d.key,d.skill,d.cats,d.fine);
+        })
+        .catch(function(e){ console.warn('SkillXray share: could not load gist',e); });
+    }
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tryRestoreShare);
+  else tryRestoreShare();
+})();
+</script>
 
 <script>
 /* Real corpus data (from findings-data.json — the same records the site serves).
@@ -1330,6 +1384,68 @@ var LOOKS_FINE = {
   openCard.addEventListener('click', function(e){
     e.preventDefault();
     if(window.__openCard) window.__openCard(scanned);
+  });
+
+  var copyLinkBtn = document.getElementById('copyLink');
+  var shortLinkBtn = document.getElementById('shortLink');
+  var shareNote = document.getElementById('shareNote');
+  var shareNoteTimer = null;
+
+  function showNote(msg, isError){
+    shareNote.textContent = msg;
+    shareNote.style.color = isError ? 'var(--amber,#c97000)' : 'var(--brand-ink)';
+    shareNote.classList.add('vis');
+    clearTimeout(shareNoteTimer);
+    shareNoteTimer = setTimeout(function(){ shareNote.classList.remove('vis'); }, 2800);
+  }
+
+  function copyToClipboard(text, successMsg){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ showNote(successMsg); }, function(){ fallbackCopy(text, successMsg); });
+    } else { fallbackCopy(text, successMsg); }
+  }
+
+  function fallbackCopy(text, successMsg){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try{ document.execCommand('copy'); showNote(successMsg); } catch(e){ showNote('Could not copy — try selecting the URL manually.', true); }
+    document.body.removeChild(ta);
+  }
+
+  function getShareData(){
+    if(!scanned || !SKILLS[scanned]) return null;
+    return { key: scanned, skill: SKILLS[scanned], cats: DATA_CATS[scanned]||[], fine: LOOKS_FINE[scanned]||[] };
+  }
+
+  if(copyLinkBtn) copyLinkBtn.addEventListener('click', function(){
+    var d = getShareData(); if(!d){ showNote('No scan to share yet.', true); return; }
+    var encoded = window.__shareEncode(d.key, d.skill, d.cats, d.fine);
+    var url = location.origin + location.pathname + '#share=' + encoded;
+    copyToClipboard(url, 'Link copied!');
+  });
+
+  if(shortLinkBtn) shortLinkBtn.addEventListener('click', function(){
+    var d = getShareData(); if(!d){ showNote('No scan to share yet.', true); return; }
+    shortLinkBtn.textContent = 'Getting link…';
+    shortLinkBtn.disabled = true;
+    var payload = JSON.stringify({key:d.key, skill:d.skill, cats:d.cats, fine:d.fine});
+    fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: {'content-type':'application/json','accept':'application/vnd.github+json'},
+      body: JSON.stringify({
+        description: 'SkillXray Privacy Card — ' + (d.skill.tag||d.key),
+        public: true,
+        files: { 'skillxray-card.json': { content: payload } }
+      })
+    })
+    .then(function(r){ if(!r.ok) throw new Error('GitHub API error '+r.status); return r.json(); })
+    .then(function(g){
+      var url = location.origin + location.pathname + '#gist=' + g.id;
+      copyToClipboard(url, 'Short link copied!');
+    })
+    .catch(function(){ showNote('Could not create short link — try "Copy link" instead.', true); })
+    .finally(function(){ shortLinkBtn.textContent = 'Short link'; shortLinkBtn.disabled = false; });
   });
 
   // run-mode chooser: pick browser / key / local, show the matching panel
