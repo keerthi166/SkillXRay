@@ -483,8 +483,9 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
             <label for="bmodel">Model</label>
             <select id="bmodel">
               <optgroup label="Recommended">
-                <option value="txjs:ibm-granite/granite-4.0-nano-instruct">Granite 4.0 Nano</option>
-                <option value="txjs:ibm-granite/granite-4.0-micro-instruct">Granite 4.0 Micro (fastest)</option>
+                <option value="txjs:onnx-community/granite-4.0-1b-ONNX-web|q4">Granite 4.0 1B</option>
+                <option value="txjs:onnx-community/granite-4.0-micro-ONNX-web">Granite 4.0 Micro</option>
+                <option value="txjs:onnx-community/granite-4.0-350m-ONNX-web|fp16">Granite 4.0 350M (fastest)</option>
               </optgroup>
               <optgroup label="Other models">
                 <option value="Llama-3.2-3B-Instruct|q4f16">Llama 3.2 3B</option>
@@ -1235,13 +1236,13 @@ var LOOKS_FINE = {
   }
 
   // Transformers.js: pipeline-based engine for HF models (Granite etc.)
-  async function ensureTransformersEngine(hfModelId, onProgress){
+  async function ensureTransformersEngine(hfModelId, dtype, onProgress){
     var cacheKey = 'txjs:'+hfModelId;
     if(engineCache[cacheKey]) return engineCache[cacheKey];
     var txjs = await window.__loadTransformersJS();
     var generator = await txjs.pipeline('text-generation', hfModelId, {
       device: 'webgpu',
-      dtype: 'q4',
+      dtype: dtype || 'q4',
       progress_callback: onProgress
     });
     engineCache[cacheKey] = generator; return generator;
@@ -1441,8 +1442,10 @@ var LOOKS_FINE = {
         var bmodelSel = (document.getElementById('bmodel')||{}).value || 'txjs:ibm-granite/granite-4.0-nano-instruct';
         var chat;
         if(isTxjs(bmodelSel)){
-          var hfModelId = bmodelSel.slice('txjs:'.length);
-          var generator = await ensureTransformersEngine(hfModelId, function(info){
+          var txParts = bmodelSel.slice('txjs:'.length).split('|');
+          var hfModelId = txParts[0];
+          var hfDtype = txParts[1] || 'q4';
+          var generator = await ensureTransformersEngine(hfModelId, hfDtype, function(info){
             var pct = info && typeof info.progress==='number' ? Math.round(info.progress) : null;
             pnote.innerHTML = 'Loading model'+(pct!=null?(' '+pct+'%'):'')+'. '+esc((info&&info.file)||'');
           });
