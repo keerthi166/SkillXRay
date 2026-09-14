@@ -531,6 +531,7 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
       <div class="pnote" id="pnote" hidden></div>
       <ul class="steps" id="steps">
         <li data-sub=""><span class="ic"></span><div><div class="txt">Reading the skill</div><div class="sub"></div></div></li>
+        <li data-sub=""><span class="ic"></span><div><div class="txt">Downloading the model</div><div class="sub"></div></div></li>
         <li data-sub=""><span class="ic"></span><div><div class="txt">Finding where it touches your data</div><div class="sub"></div></div></li>
         <li data-sub=""><span class="ic"></span><div><div class="txt">Checking each against what the skill promises</div><div class="sub"></div></div></li>
         <li data-sub=""><span class="ic"></span><div><div class="txt">Labeling what goes further than expected</div><div class="sub"></div></div></li>
@@ -1111,6 +1112,7 @@ var LOOKS_FINE = {
     s.findings.forEach(function(f){ if(!seen[f.harm]){seen[f.harm]=1;kinds.push(f.harm);} });
     var kindLine = kinds.length===1 ? ('all '+n+' are '+kinds[0]) : (kinds.length+' kinds: '+kinds.join(', '));
     return [ 'SKILL.md + its scripts',
+             'pre-computed',
              s.moves+' places it touches your data',
              n+' go further than the skill promises',
              kindLine, 'ready to read' ];
@@ -1397,9 +1399,9 @@ var LOOKS_FINE = {
     running=true; scanned=null;
     reset(); prog.hidden=false; stepsEl.hidden=false; pnote.hidden=true;
     prog.scrollIntoView({behavior:'smooth', block:'nearest'});
-    steps[2].setAttribute('data-sub','checked against SKILL.md');
-    steps[3].setAttribute('data-sub','labeled what goes further');
-    steps[4].setAttribute('data-sub','done');
+    steps[3].setAttribute('data-sub','checked against SKILL.md');
+    steps[4].setAttribute('data-sub','labeled what goes further');
+    steps[5].setAttribute('data-sub','done');
     try{
       var provider=null, key=null, baseUrl=null;
       if(mode==='key'){
@@ -1429,13 +1431,11 @@ var LOOKS_FINE = {
       var j;
       if(mode==='key'){
         var vname = PROVIDER_NAME[provider];
-        steps[1].className='active';
-        pnote.hidden=false; pnote.innerHTML='Sending the code to '+vname+' over an encrypted connection, for this one scan.';
         steps[1].className='done'; steps[1].setAttribute('data-sub', vname); setSub(steps[1]);
 
         steps[2].className='active';
-        var phaseMsg='Reading the code and checking it against what the skill promises.';
-        pnote.innerHTML=esc(phaseMsg);
+        var phaseMsg='Sending the code to '+vname+' over an encrypted connection, for this one scan.';
+        pnote.hidden=false; pnote.innerHTML=esc(phaseMsg);
         var apiModel = (((document.getElementById('apiModel')||{}).value)||'').trim();
         j = await window.SkillXray.analyze(apiChat(provider, key, apiModel, baseUrl),
               {name:p.name, files:sk.files, combined:sk.combined},
@@ -1443,7 +1443,6 @@ var LOOKS_FINE = {
         steps[2].className='done'; setSub(steps[2]);
       } else {
         steps[1].className='active';
-        pnote.hidden=false; pnote.innerHTML='Preparing the in-browser model. The first run downloads it, then it is cached.';
         var bmodelSel = (document.getElementById('bmodel')||{}).value || 'txjs:onnx-community/granite-4.0-1b-ONNX-web:q4';
         var chat;
         if(isTxjs(bmodelSel)){
@@ -1479,7 +1478,7 @@ var LOOKS_FINE = {
               + (curFile ? '<div class="dl-file">'+esc(curFile)+'</div>' : '');
           });
           if(bmodelSizeEl) updateModelSizeHint();
-          steps[1].className='done'; steps[1].setAttribute('data-sub','model ready'); setSub(steps[1]);
+          steps[1].className='done'; steps[1].setAttribute('data-sub', alreadyCached ? 'loaded from cache' : 'downloaded'); setSub(steps[1]);
           steps[2].className='active';
           var bMsg='Reading the code and checking it against what the skill promises.';
           pnote.innerHTML=esc(bMsg);
@@ -1506,7 +1505,7 @@ var LOOKS_FINE = {
         steps[2].className='done'; setSub(steps[2]);
       }
 
-      steps[3].className='active';
+      steps[4].className='active';
       var bmodelOptEl = bmodelEl && bmodelEl.options[bmodelEl.selectedIndex];
       var modelLabel = mode==='browser' && bmodelOptEl ? bmodelOptEl.textContent.trim() : null;
       var built = buildLiveSkill(p.name, j, {
@@ -1515,11 +1514,11 @@ var LOOKS_FINE = {
         mode: mode,
         modelLabel: modelLabel
       });
-      steps[3].className='done'; setSub(steps[3]);
-
-      steps[4].className='active';
-      window.__setLiveSkill(built.key, built.skill, built.cats, built.fine);
       steps[4].className='done'; setSub(steps[4]);
+
+      steps[5].className='active';
+      window.__setLiveSkill(built.key, built.skill, built.cats, built.fine);
+      steps[5].className='done'; setSub(steps[5]);
 
       scanned=built.key; pnote.hidden=true;
       pok.textContent='✓ Done. '+built.skill.findings.length+' things worth a look.';
