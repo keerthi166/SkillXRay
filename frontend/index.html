@@ -175,6 +175,8 @@ section{padding:62px 0}
   background:var(--bg);cursor:pointer;font:inherit;transition:border-color .15s,background .15s}
 .mode:hover{border-color:var(--brand-bright)}
 .mode.sel{border-color:var(--brand);background:var(--brand-soft)}
+.mode.disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+.mode.disabled:hover{border-color:var(--line)}
 .mode .mt{font-size:14.5px;font-weight:750;color:var(--ink);display:flex;align-items:center;gap:8px}
 .mode .tag{font-size:11px;font-weight:750;padding:2px 8px;border-radius:999px;
   background:var(--brand);color:#fff;letter-spacing:.02em}
@@ -503,8 +505,8 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
           <div class="md">Runs on GPT, Claude, or Gemini for the most accurate result. The skill’s code and your key go to that vendor for this one scan.</div>
           <div class="meta">Full quality</div>
         </button>
-        <button class="mode" data-mode="local" type="button">
-          <div class="mt">On your machine</div>
+        <button class="mode disabled" data-mode="local" type="button" disabled>
+          <div class="mt">On your machine <span class="tag">Coming soon</span></div>
           <div class="md">Run one command on your own computer. Your key and the skill’s code never leave it.</div>
           <div class="meta">Full quality · Nothing leaves</div>
         </button>
@@ -564,7 +566,7 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
           <p class="scan-hint" id="keyHint">The key travels over an encrypted connection, is used for this one scan, and is never saved. Because the scan runs on the vendor’s model, the skill’s code is sent there too. Leave Model blank for a sensible default, or name any model your key can use. Want nothing to leave your computer? Use the browser model, or run it on your machine.</p>
         </div>
         <div class="mode-panel" data-for="local">
-          <p class="scan-hint">No key to paste here. You set that up on your own machine, in a <span style="font-family:'JetBrains Mono',monospace;font-size:13px">.env</span> file that stays there. <a href="#local">See the commands ↓</a></p>
+          <p class="scan-hint">This mode is coming soon. When it's ready, you'll be able to run the scan locally — nothing will leave your computer.</p>
         </div>
       </div>
     </div>
@@ -584,32 +586,7 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
     </div>
   </div>
 
-  <div class="local" id="local">
-    <p class="lead"><b>Prefer to run it on your own machine?</b> Point it at any skill folder. Nothing leaves your computer except the model call you set up.</p>
-    <div class="term">
-      <div class="bar"><i style="background:#ff5f56"></i><i style="background:#ffbd2e"></i><i style="background:#27c93f"></i><span class="t">bash · SkillXray</span><button class="copy" type="button" aria-label="Copy the commands">Copy</button></div>
-<pre><span class="c"># 1 · get the code</span>
-<span class="p">$</span> git clone https://github.com/keerthi166/SkillAppropriateness
-<span class="p">$</span> cd SkillAppropriateness
-
-<span class="c"># 2 · set up once</span>
-<span class="p">$</span> python3.13 -m venv .venv
-<span class="p">$</span> .venv/bin/pip install -r requirements.txt
-
-<span class="c"># 3 · pick how the model runs — all local-friendly, no VPN needed</span>
-<span class="c"># local &amp; private (recommended): run a model on your own machine with Ollama</span>
-<span class="p">$</span> ollama pull llama3.1:8b
-<span class="p">$</span> .venv/bin/python skillxray.py <span class="g">./path/to/your-skill</span> --provider ollama
-
-<span class="c"># or use your own cloud key, kept in a .env file that never leaves your machine:</span>
-<span class="p">$</span> echo "OPENAI_API_KEY=sk-…" >> .env
-<span class="p">$</span> .venv/bin/python skillxray.py <span class="g">./path/to/your-skill</span> --provider openai
-<span class="c"># Anthropic instead? add the SDK, then your key:</span>
-<span class="p">$</span> .venv/bin/pip install anthropic && echo "CLAUDE_API_KEY=sk-ant-…" >> .env
-<span class="p">$</span> .venv/bin/python skillxray.py <span class="g">./path/to/your-skill</span> --provider claude</pre>
-    </div>
-    <p class="scan-hint"><b>Pick a capable local model.</b> A small one misses data operations the same way the free in-browser model does — and its context may be too small to read a long file (Ollama defaults low; raise it, e.g. <code>OLLAMA_CONTEXT_LENGTH</code> / <code>num_ctx</code>, or use a cloud key). If a scan reports no findings on a skill that ships code, treat that as inconclusive, not a clean bill of health.</p>
-  </div>
+  <div class="local" id="local" hidden></div>
 </div></section>
 
 <section id="how"><div class="wrap">
@@ -1749,7 +1726,7 @@ var LOOKS_FINE = {
   if(modeOpts){
     var panels = Array.prototype.slice.call(document.querySelectorAll('.mode-panel'));
     modeOpts.addEventListener('click', function(e){
-      var card = e.target.closest('.mode'); if(!card) return;
+      var card = e.target.closest('.mode'); if(!card || card.classList.contains('disabled')) return;
       Array.prototype.slice.call(modeOpts.children).forEach(function(c){ c.classList.toggle('sel', c===card); });
       var m = card.getAttribute('data-mode');
       panels.forEach(function(p){ p.classList.toggle('on', p.getAttribute('data-for')===m); });
