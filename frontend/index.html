@@ -574,7 +574,7 @@ footer{border-top:1px solid var(--line);margin-top:12px;padding:36px 24px 56px}
       <div class="pnote" id="pnote" hidden></div>
       <ul class="steps" id="steps">
         <li data-sub=""><span class="ic"></span><div><div class="txt">Reading the skill</div><div class="sub"></div></div></li>
-        <li data-sub=""><span class="ic"></span><div><div class="txt">Downloading the model</div><div class="sub"></div></div></li>
+        <li data-sub=""><span class="ic"></span><div><div class="txt">Downloading/validating model</div><div class="sub"></div></div></li>
         <li data-sub=""><span class="ic"></span><div><div class="txt">Finding where it touches your data</div><div class="sub"></div></div></li>
         <li data-sub=""><span class="ic"></span><div><div class="txt">Checking each against what the skill promises</div><div class="sub"></div></div></li>
         <li data-sub=""><span class="ic"></span><div><div class="txt">Labeling what goes further than expected</div><div class="sub"></div></div></li>
@@ -1658,7 +1658,9 @@ var LOOKS_FINE = {
 
       steps[4].className='active';
       var bmodelOptEl = bmodelEl && bmodelEl.options[bmodelEl.selectedIndex];
-      var modelLabel = mode==='browser' && bmodelOptEl ? bmodelOptEl.textContent.trim() : null;
+      var modelLabel = mode==='browser' && bmodelOptEl ? bmodelOptEl.textContent.trim()
+                     : mode==='key' ? (apiModel || PROVIDER_NAME[provider] || provider)
+                     : null;
       var built = buildLiveSkill(p.name, j, {
         files: (sk.files||[]).map(function(f){ return f.path; }),
         source: p.owner,
